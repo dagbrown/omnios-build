@@ -19,3 +19,16 @@
 # tip, you MUST uncomment it, or KVM/KVM-cmd won't build.
 #KVM_ROLLBACK=43aa6602f0d68ff7e032aad06645e34e9921d976
 #KVM_CMD_ROLLBACK=1c6181be55d1cadc4426069960688307a6083131
+
+# Settings added by omni setup
+
+PREBUILT_ILLUMOS=/build/illumos-omnios
+PKGSRVR=file:///build/repo
+TMPDIR=/build/tmp
+DTMPDIR=$TMPDIR
+if [ `id -u` = '0' ]; then
+	ROOT_OK=1
+	export FORCE_UNSAFE_CONFIGURE=1
+fi
+#SKIP_KAYAK_KERNEL=1
+
