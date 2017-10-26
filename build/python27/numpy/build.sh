@@ -22,6 +22,7 @@
 #
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -29,7 +30,7 @@
 
 PKG=library/python-2/numpy-27
 PROG=numpy
-VER=1.13.1
+VER=1.13.3
 SUMMARY="numpy - package for scientific computing with Python"
 DESC="$SUMMARY"
 
@@ -54,5 +55,5 @@ patch_source
 prep_build
 python_build
 strip_install -x
-make_package
+make_package local.mog ../final.mog
 clean_up

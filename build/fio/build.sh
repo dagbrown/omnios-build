@@ -30,14 +30,12 @@
 . ../../lib/functions.sh
 
 PROG=fio        # App name
-VER=3.0        # App version
+VER=3.1        # App version
 VERHUMAN=$VER   # Human-readable version
 #PVER=          # Branch (set in config.sh, override here if needed)
 PKG=system/test/fio # Package name (e.g. library/foo)
 SUMMARY="Flexible IO Tester" # One-liner, must be filled in
 DESC="Flexible IO Tester" # Longer description, must be filled in
-# The source will only unpack using GNU tar
-TAR=gtar
 NOSCRIPTSTUB=1  # Don't make isa wrappers for scripts
 BUILDDIR=$PROG-$PROG-$VER
 

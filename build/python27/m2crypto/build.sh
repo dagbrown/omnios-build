@@ -22,6 +22,7 @@
 #
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -29,7 +30,7 @@
 
 PKG=library/python-2/m2crypto-27
 PROG=M2Crypto
-VER=0.26.0
+VER=0.27.0
 SUMMARY="Python interface for openssl"
 DESC="M2Crypto provides a python interface to the openssl library."
 
@@ -44,5 +45,5 @@ download_source $PROG $PROG $VER
 patch_source
 prep_build
 python_build
-make_package
+make_package local.mog ../final.mog
 clean_up

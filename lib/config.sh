@@ -75,7 +75,7 @@ FFIVERS=`pkg list -H libffi | awk '{print $(NF-1)}' | cut -d- -f1`
 #############################################################################
 
 # Perl versions we currently build against
-PERLVER=5.24.2
+PERLVER=5.24.3
 SPERLVER=${PERLVER%.*}
 
 # Full paths to bins
@@ -113,12 +113,14 @@ PYTHONLIB=$PYTHONPATH/lib
 WGET=wget
 PATCH=gpatch
 MAKE=gmake
-TAR=tar
+TAR="gtar --no-same-permissions --no-same-owner"
 GZIP=gzip
 BUNZIP2=bunzip2
 XZCAT=xzcat
 UNZIP=unzip
 AWK=gawk
+# Command for privilege escalation. Can be overriden in site.sh
+PFEXEC=sudo
 
 # Figure out number of logical CPUs for use with parallel gmake jobs (-j)
 # Default to 1.5*nCPUs as we assume the build machine is 100% devoted to

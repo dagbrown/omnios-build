@@ -22,6 +22,7 @@
 #
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -29,7 +30,7 @@
 
 PKG=library/python-2/cffi-27
 PROG=cffi
-VER=1.10.0
+VER=1.11.1
 SUMMARY="cffi - Foreign Function Interface for Python calling C code"
 DESC="$SUMMARY"
 
@@ -41,5 +42,5 @@ patch_source
 prep_build
 python_build
 strip_install -x
-make_package
+make_package local.mog ../final.mog
 clean_up

@@ -22,6 +22,7 @@
 #
 #
 # Copyright 2016 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -40,5 +41,5 @@ download_source $PROG $PROG $VER
 patch_source
 prep_build
 python_build
-make_package
+make_package local.mog ../final.mog
 clean_up

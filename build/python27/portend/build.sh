@@ -21,7 +21,7 @@
 # CDDL HEADER END
 #
 #
-# Copyright 2016 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -29,7 +29,7 @@
 
 PKG=library/python-2/portend-27
 PROG=portend
-VER=2.1.2
+VER=2.2
 SUMMARY="portend - TCP port monitoring utilities"
 DESC="$SUMMARY"
 
@@ -40,5 +40,5 @@ download_source $PROG $PROG $VER
 patch_source
 prep_build
 python_build
-make_package
+make_package ../final.mog
 clean_up

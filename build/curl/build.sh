@@ -28,7 +28,7 @@
 . ../../lib/functions.sh
 
 PROG=curl       # App name
-VER=7.55.1      # App version
+VER=7.56.1      # App version
 PKG=web/curl    # Package name (without prefix)
 SUMMARY="$PROG - command line tool for transferring data with URL syntax"
 DESC="$SUMMARY"
@@ -40,12 +40,17 @@ CONFIGURE_OPTS="--enable-thread --with-ca-bundle=/etc/ssl/cacert.pem"
 CONFIGURE_OPTS_64="$CONFIGURE_OPTS_64 --includedir=$PREFIX/include/amd64"
 
 LIBTOOL_NOSTDLIB=libtool
+TESTSUITE_FILTER="^TEST[A-Z]"
+
+# Skip tests when in batch mode as they take a long time
+[ -n "$BATCH" ] && SKIP_TESTSUITE=1
 
 init
 download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
+run_testsuite
 make_isa_stub
 make_package
 clean_up

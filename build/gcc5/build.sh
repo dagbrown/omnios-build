@@ -36,16 +36,20 @@ PKG=developer/gcc5
 SUMMARY="gcc ${VER}"
 DESC="$SUMMARY"
 
-export LD_LIBRARY_PATH=$OPT/lib
-PATH=/usr/perl5/${PERLVER}/bin:$PATH
-export PATH
-
-DEPENDS_IPS="developer/$PKGV/libgmp-$PKGV developer/$PKGV/libmpfr-$PKGV developer/$PKGV/libmpc-$PKGV developer/gnu-binutils developer/library/lint developer/linker system/library/gcc-$GCCMAJOR-runtime"
+DEPENDS_IPS="
+	developer/$PKGV/libgmp-$PKGV
+	developer/$PKGV/libmpfr-$PKGV
+	developer/$PKGV/libmpc-$PKGV
+	developer/gnu-binutils
+	developer/library/lint
+	developer/linker
+	system/library/gcc-$GCCMAJOR-runtime
+"
 
 # This stuff is in its own domain
 PKGPREFIX=""
 
-[[ "$BUILDARCH" == "both" ]] && BUILDARCH=32
+[ "$BUILDARCH" = "both" ] && BUILDARCH=32
 PREFIX=$OPT
 
 reset_configure_opts
@@ -75,11 +79,17 @@ CONFIGURE_OPTS="\
 LDFLAGS32="-R$OPT/lib"
 export LD_OPTIONS="-zignore -zcombreloc -i"
 
+make_install() {
+    logmsg "--- make install"
+    logcmd $MAKE DESTDIR=${DESTDIR} install-strip || \
+        logerr "--- Make install failed"
+}
+
 init
 download_source $PROG/releases/$PROG-$VER $PROG $VER
 patch_source
 prep_build
 build
-make_package gcc.mog gcc-final.mog
+make_package gcc.mog depends.mog
 clean_up
 

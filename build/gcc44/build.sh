@@ -60,7 +60,6 @@ BUILDARCH=32
 PREFIX=/opt/gcc-${VER}
 reset_configure_opts
 CC=gcc
-TAR=gtar
 
 LD_FOR_TARGET=/bin/ld
 export LD_FOR_TARGET
@@ -94,7 +93,7 @@ elfedit -e "${ESTRING}" ${TMPDIR}/${BUILDDIR}/host-${HSTRING}/gcc/cc1
 elfedit -e "${ESTRING}" ${TMPDIR}/${BUILDDIR}/host-${HSTRING}/gcc/cc1plus
 elfedit -e "${ESTRING}" ${TMPDIR}/${BUILDDIR}/host-${HSTRING}/gcc/f951
 
-make_package gcc.mog
+make_package gcc.mog depends.mog
 clean_up
 
 # Vim hints

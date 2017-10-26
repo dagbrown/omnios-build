@@ -38,9 +38,6 @@ DESC="$SUMMARY"
 
 LOGFILE+=".$PROG"
 
-PATH=$OPT/bin:$PATH
-export LD_LIBRARY_PATH=$OPT/lib
-
 BUILD_DEPENDS_IPS="$PKGV"
 
 # This stuff is in its own domain
@@ -50,18 +47,20 @@ PREFIX=$OPT
 
 init
 prep_build
+
 mkdir -p $TMPDIR/$BUILDDIR
 for license in COPYING.RUNTIME COPYING.LIB COPYING3.LIB
 do
     logcmd cp $SRCDIR/files/$license $TMPDIR/$BUILDDIR/$license || \
         logerr "Cannot copy licence: $license"
 done
+
 mkdir -p $DESTDIR/usr/lib
-cp $OPT/lib/libgcc_s.so.1 $DESTDIR/usr/lib/libgcc_s.so.1
-ln -s libgcc_s.so.1 $DESTDIR/usr/lib/libgcc_s.so
+cp $OPT/lib/libgcc_s.so.1 $DESTDIR/usr/lib/libgcc_s.so.1.gcc$GCCMAJOR
 mkdir -p $DESTDIR/usr/lib/amd64
-cp $OPT/lib/amd64/libgcc_s.so.1 $DESTDIR/usr/lib/amd64/libgcc_s.so.1
-ln -s libgcc_s.so.1 $DESTDIR/usr/lib/amd64/libgcc_s.so
-make_package runtime.mog
+cp $OPT/lib/amd64/libgcc_s.so.1 \
+    $DESTDIR/usr/lib/amd64/libgcc_s.so.1.gcc$GCCMAJOR
+
+make_package runtime.mog depends.mog
 clean_up
 

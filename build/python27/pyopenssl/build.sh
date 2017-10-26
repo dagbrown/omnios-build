@@ -22,6 +22,7 @@
 #
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -29,7 +30,7 @@
 
 PKG=library/python-2/pyopenssl-27
 PROG=pyOpenSSL
-VER=17.2.0
+VER=17.3.0
 SUMMARY="pyOpenSSL - Python interface to the OpenSSL library"
 DESC="$SUMMARY"
 
@@ -42,5 +43,5 @@ download_source $PROG $PROG $VER
 patch_source
 prep_build
 python_build
-make_package
+make_package local.mog ../final.mog
 clean_up

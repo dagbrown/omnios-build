@@ -22,6 +22,7 @@
 #
 #
 # Copyright 2016 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -43,5 +44,5 @@ prep_build
 #NOTE: Uncomment these IFF we have a version w/o -X on it...
 VER=${VER//-/.}
 python_build
-make_package
+make_package ../final.mog
 clean_up

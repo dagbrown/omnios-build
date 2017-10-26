@@ -21,7 +21,7 @@
 # CDDL HEADER END
 #
 #
-# Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
 # Load support functions
@@ -43,5 +43,5 @@ patch_source
 prep_build
 python_build
 strip_install -x
-make_package
+make_package ../final.mog
 clean_up

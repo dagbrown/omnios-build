@@ -13,8 +13,6 @@ fi
 declare -A targets
 # fulltargets maps full package names to their build script.
 declare -A fulltargets
-# list of packages already built.
-declare -A already_built
 # list of licenses
 declare -A licenses
 
@@ -102,8 +100,6 @@ detect_licenses() {
     done
 }
 
-: ${BUILT_CACHE:="`pwd`/built.cache"}
-
 usage() {
     echo $0
     echo "    list [grep pattern]       (sorted alphabetically)"
@@ -111,8 +107,10 @@ usage() {
     echo "    licenses                  (audit licenses)"
     echo "    build <pkg>"
     echo "    build all"
+    echo "    build parallel <threads>  (start/continue parallel build)"
     echo "    build continue            (continue interrupted build)"
     echo "    build from <pkg>          (build <pkg> then those after)"
+    echo "    baseline [create]         (check or create pkg baseline)"
     exit
 }
 
@@ -159,20 +157,63 @@ list_build() {
     done
 }
 
-record_built() {
-    already_built+=([$1]=1)
-    echo $1 >> "$BUILT_CACHE"
-}
+##############################################################################
+# Built package cache management.
+
+: ${BUILT_CACHE:="$TMPDIR/built.cache"}
+declare -A already_built
+built_pipe="$TMPDIR/built.ipc"
 
 clear_built() {
     [ -f "$BUILT_CACHE" ] && rm -f "$BUILT_CACHE"
 }
 
+record_built() {
+    if [ -n "$BUILDCTL_PARALLEL" ]; then
+        [ -p "$built_pipe" ] || logerr "Built cache pipe does not exist."
+        echo "$*" >> $built_pipe
+    else
+        already_built+=([$1]=1)
+        echo $1 >> "$BUILT_CACHE"
+    fi
+}
+
+# When running with parallelism, writes to the built cache are synchronised
+# by a central task listening on a named pipe.
+start_built_listener() {
+    if [ ! -p "$built_pipe" ]; then
+        [ -d "`dirname $built_pipe`" ] || mkdir -p "`dirname $built_pipe`"
+        mkfifo "$built_pipe" || logerr "Could not create named pipe."
+    fi
+    export BUILDCTL_PARALLEL=1
+    logmsg "-- Background built package thread started..."
+    while :; do
+        if read line <$built_pipe; then
+            [ $line = "quit" ] && break
+            already_built+=([$line]=1)
+            [ -f "$BUILT_CACHE" ] && cp "$BUILT_CACHE" "${BUILT_CACHE}.$$"
+            echo $line >> "${BUILT_CACHE}.$$"
+            mv "${BUILT_CACHE}.$$" "${BUILT_CACHE}"
+        fi
+    done &
+}
+
+stop_built_listener() {
+        [ -p "$built_pipe" ] && echo "quit" >> $built_pipe
+}
+
 restore_built() {
     [ -f "$BUILT_CACHE" ] || return
-    for pkg in `cat "$BUILT_CACHE"`; do
-        already_built+=([$pkg]=1)
+    cp "$BUILT_CACHE" "${BUILT_CACHE}.$$"
+    for pkg in `cat "${BUILT_CACHE}.$$"`; do
+        [ -n "${already_built[$pkg]}" ] || already_built+=([$pkg]=1)
     done
+    rm -f "${BUILT_CACHE}.$$"
+}
+
+is_built() {
+    [ -n "$BUILDCTL_PARALLEL" ] && restore_built
+    [ -n "${already_built[$1]}" ]
 }
 
 built_packages_p5m() {
@@ -187,6 +228,8 @@ built_packages_sh() {
     done
 }
 
+##############################################################################
+
 build() {
     if [ -n "${fulltargets[$1]}" ]; then
         buildtgt=$1
@@ -196,7 +239,7 @@ build() {
     else
         bail "Unknown package: $1"
     fi
-    if [[ "${already_built[$buildtgt]}" = "1" ]]; then
+    if is_built $buildtgt; then
         logmsg "--- Package $1 was already built."
     else
         BUILD=${fulltargets[$buildtgt]}
@@ -267,6 +310,165 @@ licenses() {
     done | sort
 }
 
+baseline() {
+    mode="${1:-check}"
+
+    if [ $mode != create -a $mode != check ]; then
+        echo "Unknown baseline mode - $mode"
+        exit 1
+    fi
+
+    [ -d "$TMPDIR" ] || mkdir -p "$TMPDIR"
+
+    # PUBLISHER NAME                 O VERSION
+    # omnios    developer/macro/gnu-m4 1.4.18-0.151023:20171022T080105Z
+    pkgrepo -s $PKGSRVR list | nawk '
+        $1 == "PUBLISHER" { next }
+        $2 in seen { next }
+        {
+            seen[$2] = 1
+            # Remove package timestamp, NF as there can be 3/4 fields
+            sub(/:.*/, "", $NF)
+            print
+        }
+    ' | sort > $TMPDIR/baseline.$$
+
+    if [ $mode = create ]; then
+        mv $TMPDIR/baseline.$$ $MYDIR/../doc/baseline
+        echo "Created baseline in doc/baseline"
+        return
+    fi
+    note "Checking baseline"
+    if ! diff -U0 $MYDIR/../doc/baseline $TMPDIR/baseline.$$; then
+        logerr "Package list does not match baseline"
+    fi
+    rm -f $TMPDIR/baseline.$$
+}
+
+parallel_build() {
+    local threads=$1
+    export batch_flag="-b"
+    export BATCH=1
+
+    # Lint is not thread-safe
+    export lint_flag="-l"
+    export SKIP_PKGLINT=1
+
+    note "Starting parallel build with $threads thread(s)"
+
+    ((threads = threads - 1))
+
+    pkgcount=${#fulltargets[@]}
+    pkgnum=0
+
+    start_built_listener
+    # Do this now to avoid a race in the child tasks
+    init_repo
+
+    declare -A slots
+    declare -A slottgt
+    declare -A slotdesc
+    declare -A slotstart
+
+    # Skip all testsuites in parallel mode
+    export SKIP_TESTSUITE=1
+
+    for tgt in `buildorder`; do
+        ((pkgnum = pkgnum + 1))
+
+        # Defer this until last
+        [ "$tgt" = "system/install/kayak-kernel" ] && continue
+
+        # If this target belongs to the same script as an already running
+        # job, skip it.
+        _script=${fulltargets[$tgt]}
+        for i in `seq 0 $threads`; do
+            [ -z "${slots[$i]}" ] && continue
+            if [ "${fulltargets[${slottgt[$i]}]}" = "$_script" ]; then
+                logmsg "-- $tgt already being handled in slot $i"
+                continue 2
+            fi
+        done
+
+        logmsg "-- Waiting for spare job slot for $tgt"
+
+        err=0
+        while :; do
+            for i in `seq 0 $threads`; do
+                # Idle slot?
+                if [ -z "${slots[$i]}" ] || \
+                  ! kill -0 "${slots[$i]}" 2>/dev/null; then
+                    # Reap terminated job
+                    if [ -n "${slots[$i]}" ]; then
+                        logmsg "-- waiting for job $i (${slots[$i]})..."
+                        wait "${slots[$i]}"
+                        s=$?
+                        logmsg "-- Job $i terminated with status $s"
+                        if [ $s -ne 0 ]; then
+                            note "***** BUILD ERROR *****"
+                            err=1
+                            break 3
+                        fi
+                    fi
+                    note "($pkgnum/$pkgcount) Building $tgt (slot $i)"
+                    logprefix="[$i] " build $tgt &
+                    slots[$i]=$!
+                    slottgt[$i]=$tgt
+                    slotdesc[$i]="`printf "(%3d/%d) %s" $pkgnum $pkgcount $tgt`"
+                    slotstart[$i]=`date +%s`
+                    break 2
+                fi
+            done
+            # Print status summary each minute (approx.)
+            if [ `date +%S` -eq 0 ]; then
+                logmsg "######################################################"
+                logmsg "-- Job status --"
+                now=`date +%s`
+
+                # If nightly is running, include that status too
+                nightly=$PREBUILT_ILLUMOS/log/nightly.lock
+                if [ -h "$nightly" ]; then
+                    nightly_pid="`readlink $nightly | cut -d. -f3`"
+                    if kill -0 $nightly_pid; then
+                        # Nightly running
+                        msg=`grep '^===' ${nightly/lock/log} | tail -1`
+                        logmsg "`printf "    [=] %8d -  nightly %s\n" \
+                            "$nightly_pid" "${msg:0:50}"`"
+                    fi
+                fi
+                for i in `seq 0 $threads`; do
+                    [ -n "${slots[$i]}" ] || continue
+                    ((tm = now - ${slotstart[$i]}))
+                    logmsg "`printf "    [%d] %8d - (%5ds) %s\n" \
+                        "$i" "${slots[$i]}" "$tm" "${slotdesc[$i]}"`"
+                done
+                logmsg "######################################################"
+            fi
+            sleep 1
+        done
+    done
+
+    # Wait for all slots to finish
+    logmsg "-- waiting for jobs to finish"
+    for i in `seq 0 $threads`; do
+        [ -n "${slots[$i]}" ] || continue
+        if [ $err -eq 0 ]; then
+            wait "${slots[$i]}"
+        else
+            kill "${slots[$i]}"
+        fi
+    done
+
+    if [ $err -eq 0 -a -z "$SKIP_KAYAK_KERNEL" ]; then
+        # Build this one last
+        note "($pkgcount/$pkgcount) Building system/install/kayak-kernel"
+        build system/install/kayak-kernel
+    fi
+
+    stop_built_listener
+    wait
+}
+
 DEFAULT_PKGSRVR=$PKGSRVR
 DEFAULT_PKGPUBLISHER=$PKGPUBLISHER
 
@@ -300,10 +502,16 @@ case "$1" in
         exit
         ;;
 
+    baseline)
+        baseline $2
+        exit
+        ;;
+
     build)
         add_targets
         shift
-        tobuild="$*"
+        tobuild="$@"
+        [ -z "$tobuild" ] && tobuild=all
 
         skipuntil=
         if [ "$tobuild" = "continue" ]; then
@@ -323,8 +531,11 @@ case "$1" in
             clear_built
         fi
 
-        if [ -z "$tobuild" ] || [ "$tobuild" == "all" ]; then
+        if [ "$tobuild" = "all" ]; then
             batch_flag="-b"
+
+            # Skip all testsuites when building everything
+            export SKIP_TESTSUITE=1
 
             pkgcount=${#fulltargets[@]}
             pkgnum=0
@@ -337,6 +548,11 @@ case "$1" in
                 note "($pkgnum/$pkgcount) Building $tgt"
                 build $tgt
             done
+            baseline check
+        elif [[ "$tobuild" = parallel\ * ]]; then
+            restore_built
+            parallel_build "${tobuild#* }"
+            baseline check
         else
             if [[ $tobuild = *\** ]]; then
                 for tgtpatt in $tobuild; do
