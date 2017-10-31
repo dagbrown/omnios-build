@@ -117,6 +117,25 @@ show_usage() {
     echo "  -r REPO   : specify the IPS repo to use (default: $PKGSRVR)"
 }
 
+print_config() {
+    cat << EOM
+
+MYDIR:                  $MYDIR
+LIBDIR:                 $LIBDIR
+ROOTDIR:                $ROOTDIR
+TMPDIR:                 $TMPDIR
+DTMPDIR:                $DTMPDIR
+
+Mirror:                 $MIRROR
+Publisher:              $PKGPUBLISHER
+Production IPS Repo:    $IPS_REPO
+Repository:             $PKGSRVR
+Pre-built illumos:      ${PREBUILT_ILLUMOS:-"<Not configured>"}
+Privilege Escalation:   $PFEXEC
+
+EOM
+}
+
 #############################################################################
 # Log output of a command to a file
 #############################################################################
@@ -233,6 +252,8 @@ export LANG GCCPATH PATH
 
 # The dir where this file is located - used for sourcing further files
 MYDIR=$PWD/`dirname $BASH_SOURCE[0]`
+LIBDIR="`realpath $MYDIR`"
+ROOTDIR="`dirname $LIBDIR`"
 # The dir where this file was sourced from - this will be the directory of the
 # build script
 SRCDIR=$PWD/`dirname $0`
@@ -241,7 +262,7 @@ SRCDIR=$PWD/`dirname $0`
 # Load configuration options
 #############################################################################
 . $MYDIR/config.sh
-. $MYDIR/site.sh
+[ -f $MYDIR/site.sh ] && . $MYDIR/site.sh
 
 # Platform information
 SUNOSVER=`uname -r` # e.g. 5.11
@@ -895,6 +916,48 @@ make_package() {
             logerr "------ Failed to publish package"
     fi
     logmsg "--- Published $FMRI" 
+
+     [ -z "$BATCH" -a -z "$SKIP_PKG_DIFF" ] && diff_package $FMRI
+}
+
+# Create a list of the items contained within a package in a format suitable
+# for comparing with previous versions. We don't care about changes in file
+# content, just whether items have been added, removed or had their attributes
+# such as ownership changed.
+pkgitems() {
+    pkg contents -m "$@" 2>&1 | sed -E '
+        # Remove signatures
+        /^signature/d
+        # Remove version numbers from the package FMRI
+        /name=pkg.fmri/s/@.*//
+        /human-version/d
+        # Remove version numbers from dependencies
+        /^depend/s/@[^ ]+//g
+        # Remove file hashes
+        s/^file [^ ]+/file/
+        s/ chash=[^ ]+//
+        s/ elfhash=[^ ]+//
+        # Remove file sizes
+        s/ pkg.[c]?size=[0-9]+//g
+    ' | pkgfmt
+}
+
+diff_package() {
+    local fmri="$1"
+    xfmri=${fmri%@*}
+
+    logmsg "--- Comparing old package with new"
+    if ! gdiff -U0 --color=always --minimal \
+        <(pkgitems -g $IPS_REPO $xfmri) \
+        <(pkgitems -g $PKGSRVR $fmri) \
+        > $TMPDIR/pkgdiff.$$; then
+            echo
+            # Not anchored due to colour codes in file
+            egrep -v '(\-\-\-|\+\+\+|\@\@) ' $TMPDIR/pkgdiff.$$
+            note "Differences found between old and new packages"
+            ask_to_continue
+    fi
+    rm -f $TMPDIR/pkgdiff.$$
 }
 
 #############################################################################

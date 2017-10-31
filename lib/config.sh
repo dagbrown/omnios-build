@@ -31,12 +31,22 @@
 RELVER=151023
 PVER=0.$RELVER
 
+# Default package publisher
+PKGPUBLISHER=omnios
+
+# Default repository
+PKGSRVR=file://$ROOTDIR/tmp.repo/
+
 # set locale to C
 export LC_ALL=C
 
 # Which server to fetch files from.
 # If $MIRROR begins with a '/', it is treated as a local directory.
 MIRROR=https://mirrors.omniosce.org
+
+# The production IPS repository for this branch (may be overriden in site.sh)
+# Used for package contents diffing.
+IPS_REPO=https://pkg.omniosce.org/bloody/core
 
 # Default prefix for packages (may be overridden)
 PREFIX=/usr
@@ -119,7 +129,7 @@ BUNZIP2=bunzip2
 XZCAT=xzcat
 UNZIP=unzip
 AWK=gawk
-# Command for privilege escalation. Can be overriden in site.sh
+# Command for privilege escalation. Can be overridden in site.sh
 PFEXEC=sudo
 
 # Figure out number of logical CPUs for use with parallel gmake jobs (-j)

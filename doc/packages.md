@@ -9,7 +9,7 @@
 | compress/xz				| 5.2.3			| https://tukaani.org/xz/
 | compress/zip				| 3.0			| http://www.info-zip.org/Zip.html
 | data/iso-codes			| 3.76			| http://pkg-isocodes.alioth.debian.org/downloads/
-| database/sqlite-3			| 3200100		| https://www.sqlite.org/download.html
+| database/sqlite-3			| 3210000		| https://www.sqlite.org/download.html
 | developer/bmake			| 20170812		| http://www.crufty.net/ftp/pub/sjg/
 | developer/build/autoconf		| 2.69			| https://git.savannah.gnu.org/cgit/autoconf.git/refs/tags
 | developer/build/automake		| 1.15.1		| https://git.savannah.gnu.org/cgit/automake.git/refs/tags
@@ -69,7 +69,7 @@
 | system/management/snmp/net-snmp	| 5.7.3			| https://sourceforge.net/projects/net-snmp/files/net-snmp
 | system/pciutils			| 3.5.5			| https://www.kernel.org/pub/software/utils/pciutils/
 | system/test/fio			| 3.1			| https://github.com/axboe/fio/releases
-| terminal/screen			| 4.6.1			| http://git.savannah.gnu.org/cgit/screen.git/refs/tags
+| terminal/screen			| 4.6.2			| http://git.savannah.gnu.org/cgit/screen.git/refs/tags
 | terminal/tmux				| 2.6			| https://github.com/tmux/tmux/releases
 | text/gawk				| 4.1.4			| https://ftp.gnu.org/gnu/gawk/
 | text/gnu-diffutils			| 3.6			| http://git.savannah.gnu.org/cgit/diffutils.git/refs/tags
@@ -80,7 +80,7 @@
 | text/groff				| 1.22.3		| https://ftp.gnu.org/gnu/groff/
 | text/less				| 487			| https://ftp.gnu.org/gnu/less/
 | web/curl				| 7.56.1		| https://curl.haxx.se/download.html
-| web/wget				| 1.19.1		| https://git.savannah.gnu.org/cgit/wget.git/refs/tags
+| web/wget				| 1.19.2		| https://git.savannah.gnu.org/cgit/wget.git/refs/tags
 | library/glib2				| 2.54.0		| https://download.gnome.org/sources/glib/cache.json
 | developer/gnu-binutils		| 2.25			| https://ftp.gnu.org/gnu/binutils | On hold pending illumos fix https://www.illumos.org/issues/6653
 | media/cdrtools			| 3.01			| https://sourceforge.net/projects/cdrtools/files
