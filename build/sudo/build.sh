@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,28 +18,28 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=sudo
-VER=1.8.21p2
-VERHUMAN=$VER
+VER=1.8.27
 PKG=security/sudo
-SUMMARY="$PROG - authority delegation tool"
-DESC="$SUMMARY"
+SUMMARY="Authority delegation tool"
+DESC="Provide limited super-user privileges to specific users"
 
-#LIBS="-lssp_nonshared"
-LIBS=""
-export LIBS
-CONFIGURE_OPTS_32="$CONFIGURE_OPTS_32 --bindir=/usr/bin --sbindir=/usr/sbin --libexecdir=/usr/lib/sudo"
-CONFIGURE_OPTS_64="$CONFIGURE_OPTS_64 --libexecdir=/usr/lib/sudo/amd64"
-CFLAGS="$CFLAGS -fno-stack-protector"
+CONFIGURE_OPTS_32+="
+    --bindir=/usr/bin
+    --sbindir=/usr/sbin
+    --libexecdir=/usr/lib/sudo
+"
+CONFIGURE_OPTS_64+="
+    --libexecdir=/usr/lib/sudo/amd64
+"
 CONFIGURE_OPTS="
     --with-ldap
     --with-project
@@ -53,16 +53,18 @@ CONFIGURE_OPTS="
     --disable-pam-session
 "
 
+SKIP_LICENCES=Various
+TESTSUITE_SED="
+    /^libtool:/d
+"
+
 make_install64() {
-    # If this file exists, install will attempt to validate it
-    # which will fail becuase we aren't running as root
+    # This file will exist from the 32-bit 'make install' and so this
+    # install will attempt to validate it and will fail because we aren't
+    # running as root. Remove the file and let the 64-bit installation
+    # re-create it.
     logcmd rm -f $DESTDIR/etc/sudoers
     make_install
-    # Now cleanup the bits we didn't want (amd64 bins/includes)
-    logcmd rm -rf $DESTDIR/usr/bin/amd64
-    logcmd rm -rf $DESTDIR/usr/sbin/amd64
-    logcmd rm -rf $DESTDIR/usr/include/amd64
-    logcmd rm -rf $DESTDIR/var/db
 }
 
 init
@@ -77,4 +79,4 @@ make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

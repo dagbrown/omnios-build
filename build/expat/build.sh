@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,45 +18,45 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=expat
-VER=2.2.4
+VER=2.2.7
 PKG=library/expat
-SUMMARY="libexpat - XML parser library"
-DESC="$SUMMARY"
-BUILDDIR=$PROG-$VER
+SUMMARY="XML parser library"
+DESC="Fast streaming XML parser written in C"
 
-LIBTOOL_NOSTDLIB=libtool
-LIBTOOL_NOSTDLIB_EXTRAS=-lc
+CONFIGURE_OPTS_64+="
+    --bindir=/usr/bin
+"
 
+TESTSUITE_SED="
+    /^[^#]/d
+"
+
+save_function make_clean _make_clean
 make_clean() {
     # As of expat 2.2.4, distclean removes the generated xmlwf.1
     # man page too so that it is re-generated during build using
     # docbook2X. We don't have docbook2X so preserve the file.
-    [ -f doc/xmlwf.1~ ] || cp doc/xmlwf.1 doc/xmlwf.1~
-    logcmd $MAKE distclean || \
-        logcmd $MAKE clean || \
-        logmsg "--- *** WARNING *** make (dist)clean Failed"
-    [ -f doc/xmlwf.1 ] || cp doc/xmlwf.1~ doc/xmlwf.1
+    [ -f doc/xmlwf.1~ ] || cp doc/xmlwf.1{,~}
+    _make_clean
+    [ -f doc/xmlwf.1 ] || cp doc/xmlwf.1{~,}
 }
 
-CONFIGURE_OPTS_64="$CONFIGURE_OPTS_64 --includedir=/usr/include"
 init
 download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
 run_testsuite check
-make_isa_stub
-sync
 make_package
 clean_up
 
+# Vim hints
+# vim:ts=4:sw=4:et:fdm=marker

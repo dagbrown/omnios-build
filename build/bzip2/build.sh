@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,40 +18,43 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=bzip2
-VER=1.0.6
+VER=1.0.8
 PKG=compress/bzip2
 SUMMARY="The bzip compression utility"
-DESC="$SUMMARY"
+DESC="A patent free high-quality data compressor"
+
+SKIP_LICENCES=bzip2
+XFORM_ARGS="-D VER=$VER"
 
 # We don't use configure, so explicitly export PREFIX
 PREFIX=/usr
 export PREFIX
 export CC
 
+base_CFLAGS="$CFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Winline"
+
 configure32() {
-  BINISA=$ISAPART
-  LIBISA=""
-  CFLAGS="-m32 -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -Wall -Winline -O2"
-  LDFLAGS="$LDFLAGS $LDFLAGS32"
-  export BINISA LIBISA CFLAGS LDFLAGS
+    BINISA=$ISAPART
+    LIBISA=""
+    CFLAGS="$CFLAGS32 $base_CFLAGS"
+    LDFLAGS="$LDFLAGS $LDFLAGS32"
+    export BINISA LIBISA CFLAGS LDFLAGS
 }
 
 configure64() {
-  BINISA=$ISAPART64
-  LIBISA=$ISAPART64
-  CFLAGS="-m64 -D_LARGEFILE64_SOURCE -Wall -Winline -O2"
-  LDFLAGS="$LDFLAGS $LDFLAGS64"
-  export BINISA LIBISA CFLAGS LDFLAGS
+    BINISA=$ISAPART64
+    LIBISA=$ISAPART64
+    CFLAGS="$CFLAGS64 $base_CFLAGS"
+    LDFLAGS="$LDFLAGS $LDFLAGS64"
+    export BINISA LIBISA CFLAGS LDFLAGS
 }
 
 save_function make_clean make_clean_orig
@@ -62,7 +65,7 @@ make_clean() {
 
 # We need to build the shared lib using a second Makefile
 make_shlib() {
-    [[ -n $NO_PARALLEL_MAKE ]] && MAKE_JOBS=""
+    [ -n "$NO_PARALLEL_MAKE" ] && MAKE_JOBS=
     logmsg "--- make (shared lib)"
     OLD_CFLAGS=$CFLAGS
     CFLAGS="-fPIC $CFLAGS"
@@ -78,7 +81,6 @@ make_shlib_install() {
     logcmd $MAKE DESTDIR=${DESTDIR} -f Makefile-libbz2_so install || \
         logerr "--- Make install failed (shared lib)"
 }
-
 
 build32() {
     pushd $TMPDIR/$BUILDDIR > /dev/null
@@ -102,14 +104,12 @@ build64() {
     make_shlib
     make_prog64
     make_install64
-    for src in libbz2.so libbz2.so.1
-    do
-        ln -s ./libbz2.so.1.0.6 $DESTDIR/usr/lib/$src
-        ln -s ./libbz2.so.1.0.6 $DESTDIR/usr/lib/$ISAPART64/$src
-    done
     popd > /dev/null
 }
 
+TESTSUITE_SED="
+    /in business/q
+"
 
 init
 download_source $PROG $PROG $VER
@@ -118,5 +118,9 @@ prep_build
 build
 make_isa_stub
 strip_install
+run_testsuite
 make_package
 clean_up
+
+# Vim hints
+# vim:ts=4:sw=4:et:fdm=marker

@@ -37,7 +37,29 @@
 # uncomment the following line.
 #SKIP_KAYAK_KERNEL=1
 
+# If you want other running jobs to be allowed to continue to completion when
+# a build error is detected, set this.
+#NOKILL_ON_ERROR=1
+
 # To use a proxy for source code retrieval.
 #export http_proxy=http://192.168.1.1:8080/
 #export https_proxy=http://192.168.1.1:8080/
+
+# To flag packages as expensive to avoid building them by default:
+#EXPENSIVE="
+# 	developer/gcc44
+# 	developer/gcc44/libgmp-gcc44
+#	developer/gcc44/libmpc-gcc44
+#	developer/gcc44/libmpfr-gcc44
+#	developer/gcc7
+#	developer/gcc8
+#	developer/java/openjdk8
+#	runtime/java/openjdk8
+#"
+
+# Throttle the number of expensive packages that can be built in parallel
+#ETHROTTLE=3
+
+# To always use the ccache engine to speed up re-compilation
+#USE_CCACHE=1
 

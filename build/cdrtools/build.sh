@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,13 +18,12 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=cdrtools
@@ -32,33 +31,49 @@ VER=3.01
 VERHUMAN=$VER
 PKG=media/cdrtools
 SUMMARY="CD creation utilities"
-DESC="$SUMMARY ($VER)"
+DESC="$SUMMARY"
 
-DEPENDS_IPS="system/library system/library/gcc-5-runtime"
+DEPENDS_IPS="system/library system/library/gcc-runtime"
 
-MAKE="make"
-BUILDARCH=32
+export MAKE=/usr/bin/make
 
-# cdrtools doesn't use configure, just make
+set_arch 32
+
 make_clean() {
-    true
+    logcmd ./.clean
 }
+
+# cdrtools doesn't use configure in the normal way, just make will invoke
+# configure automatically.
 configure32() {
-    true
+    export CC
+    MAKE_ARGS="CC=$CC"
 }
+
 make_install() {
-    mkdir -p $DESTDIR/etc/security/exec_attr.d
-    mkdir -p $DESTDIR/usr/bin
-    mkdir -p $DESTDIR/usr/share/man/man1
-    cp $SRCDIR/files/exec_attr $DESTDIR/etc/security/exec_attr.d/cdrecord
-    cp $TMPDIR/$BUILDDIR/mkisofs/OBJ/i386-sunos5-gcc/mkisofs $DESTDIR/usr/bin/mkisofs
-    mkdir -p $DESTDIR/usr/share/man/man8
-    cp $TMPDIR/$BUILDDIR/mkisofs/mkisofs.8 $DESTDIR/usr/share/man/man8/mkisofs.8
+    pushd $DESTDIR >/dev/null
+
+    logcmd mkdir -p etc/security/exec_attr.d
+    logcmd mkdir -p usr/bin
+    logcmd mkdir -p usr/share/man/man1
+    logcmd mkdir -p usr/share/man/man8
+
+    logcmd cp $SRCDIR/files/exec_attr etc/security/exec_attr.d/cdrecord
+
+    logcmd cp $TMPDIR/$BUILDDIR/mkisofs/OBJ/i386-sunos5-gcc/mkisofs \
+        usr/bin/mkisofs || logerr "install mkisofs failed"
+    logcmd cp $TMPDIR/$BUILDDIR/mkisofs/mkisofs.8 usr/share/man/man8/mkisofs.8 \
+        || logerr "install mkisofs.8 failed"
+
     for cmd in cdda2wav cdrecord readcd ; do
-        cp $SRCDIR/files/$cmd $DESTDIR/usr/bin/$cmd
-        cp $TMPDIR/$BUILDDIR/$cmd/OBJ/i386-sunos5-gcc/$cmd $DESTDIR/usr/bin/$cmd.bin
-        cp $TMPDIR/$BUILDDIR/$cmd/$cmd.1 $DESTDIR/usr/share/man/man1/$cmd.1
+        logcmd cp $SRCDIR/files/$cmd usr/bin/$cmd || logerr "cp $cmd failed"
+        logcmd cp $TMPDIR/$BUILDDIR/$cmd/OBJ/i386-sunos5-gcc/$cmd \
+            usr/bin/$cmd.bin || logerr "cp $cmd.bin failed"
+        logcmd cp $TMPDIR/$BUILDDIR/$cmd/$cmd.1 usr/share/man/man1/$cmd.1 \
+            || logerr "cp $cmd.1 failed"
     done
+
+    popd >/dev/null
 }
 
 init
@@ -66,9 +81,8 @@ download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
-make_isa_stub
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,23 +18,35 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
-#
-# Load support functions
+
 . ../../lib/functions.sh
 
-# The following lines let buildctl spot the packages that are actually built
-# by the makefiles in pkg
+# The following lines starting with PKG= let buildctl spot the packages that
+# are actually built by the makefiles in the pkg source. Also build a package
+# list to use later when showing package differences.
 PKG=package/pkg
+PKGLIST=$PKG
 PKG=system/zones/brand/ipkg
+PKGLIST+=" $PKG"
 PKG=system/zones/brand/lipkg
-SUMMARY="This isn't used, see the makefiles for pkg"
-DESC="This isn't used, see the makefiles for pkg"
+PKGLIST+=" $PKG"
+PKG=system/zones/brand/illumos
+PKGLIST+=" $PKG"
+PKG=system/zones/brand/sparse
+PKGLIST+=" $PKG"
+PKG=system/zones/brand/pkgsrc
+PKGLIST+=" $PKG"
+PKG=system/zones/brand/bhyve
+PKGLIST+=" $PKG"
+PKG=system/zones/brand/kvm
+PKGLIST+=" $PKG"
+SUMMARY="This isn't used"
+DESC="$SUMMARY"
 
 PROG=pkg
 VER=omni
@@ -44,69 +56,44 @@ if [ -z "$PKGPUBLISHER" ]; then
     exit
 fi
 
-GIT=/usr/bin/git
-# On a running system, these are in /usr/include/.
-HEADERS="libbrand.h libuutil.h libzonecfg.h"
-BRAND_CFLAGS="-I./gate-include"
-
-BUILD_DEPENDS_IPS="developer/versioning/git developer/versioning/mercurial system/zones/internal text/intltool"
-DEPENDS_IPS="runtime/python-27"
+BUILD_DEPENDS_IPS="
+    developer/versioning/git
+    system/zones/internal
+    text/intltool
+"
 
 # Respect environmental overrides for these to ease development.
-: ${PKG_SOURCE_REPO:=https://github.com/omniosorg/pkg5}
+: ${PKG_SOURCE_REPO:=$GITHUB/pkg5}
 : ${PKG_SOURCE_BRANCH:=r$RELVER}
+VER+="-$PKG_SOURCE_BRANCH"
 
-clone_source(){
-    logmsg "pkg -> $TMPDIR/$BUILDDIR/pkg"
-    logcmd mkdir -p $TMPDIR/$BUILDDIR
-    pushd $TMPDIR/$BUILDDIR > /dev/null 
-    # Even though our default is "pkg5" now, still call the directory 
-    # "pkg" for now due to the hideous number of places "pkg" occurs here.
-    if [ ! -d pkg ]; then
-        if [ -n "$PKG5_CLONE" -a -d "$PKG5_CLONE" ]; then
-            logmsg "-- pulling pkg5 from local clone"
-            logcmd rsync -ar $PKG5_CLONE/ pkg/
-        else
-            logcmd $GIT clone $PKG_SOURCE_REPO pkg
-        fi
-    fi
-    if [ -z "$PKG5_CLONE" ]; then
-        logcmd $GIT -C pkg pull || logerr "failed to pull"
-    fi
-    logcmd $GIT -C pkg checkout $PKG_SOURCE_BRANCH \
-        || logmsg "No $PKG_SOURCE_BRANCH branch, using master."
-    popd > /dev/null 
+clone_source() {
+    clone_github_source pkg \
+        "$PKG_SOURCE_REPO" "$PKG_SOURCE_BRANCH" "$PKG5_CLONE"
 }
 
-build(){
-    pushd $TMPDIR/$BUILDDIR/pkg/src > /dev/null \
-        || logerr "Cannot change to src dir"
-    find . -depth -name \*.mo -exec touch {} +
-    find gui/help -depth -name \*.in | sed -e 's/\.in$//' | xargs touch
-    pushd $TMPDIR/$BUILDDIR/pkg/src/brand > /dev/null
-    logmsg "--- brand subbuild"
-    logcmd make clean
-    ISALIST=i386 CC=gcc CFLAGS="$BRAND_CFLAGS" logcmd make \
-        CODE_WS=$TMPDIR/$BUILDDIR/pkg || logerr "brand make failed"
-    popd
+build() {
+    export CC
+    pushd $TMPDIR/$BUILDDIR/pkg/src > /dev/null || logerr "Cannot chdir"
     logmsg "--- toplevel build"
     logcmd make clean
-    ISALIST=i386 CC=gcc logcmd make \
-        CODE_WS=$TMPDIR/$BUILDDIR/pkg || logerr "toplevel make failed"
+    logcmd make CC=$GCC CODE_WS=$TMPDIR/$BUILDDIR/pkg || logerr "make failed"
     logmsg "--- proto install"
-    ISALIST=i386 CC=gcc logcmd make install \
-        CODE_WS=$TMPDIR/$BUILDDIR/pkg || logerr "proto install failed"
+    logcmd make install CC=$GCC CODE_WS=$TMPDIR/$BUILDDIR/pkg \
+        || logerr "install failed"
     popd > /dev/null
 }
 
-package(){
+package() {
     pushd $TMPDIR/$BUILDDIR/pkg/src/pkg > /dev/null
     logmsg "--- packaging"
     logcmd make clean
-    ISALIST=i386 CC=gcc logcmd make \
+    logcmd make \
+        CC=$GCC \
         CODE_WS=$TMPDIR/$BUILDDIR/pkg \
         BUILDNUM=$BUILDNUM || logerr "pkg make failed"
-    ISALIST=i386 CC=gcc logcmd make publish-pkgs \
+    logcmd make publish-pkgs \
+        CC=$GCC \
         CODE_WS=$TMPDIR/$BUILDDIR/pkg \
         BUILDNUM=$BUILDNUM \
         PKGSEND_OPTS="" \
@@ -122,5 +109,11 @@ clone_source
 build
 package
 
+if [ -z "$BATCH" -a -z "$SKIP_PKG_DIFF" ]; then
+    for pkg in $PKGLIST; do
+        diff_latest $pkg
+    done
+fi
+
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

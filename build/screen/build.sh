@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,28 +18,26 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=screen
 VER=4.6.2
 PKG=terminal/screen
 SUMMARY="GNU Screen terminal multiplexer"
-DESC="$SUMMARY"
+DESC="A full-screen window manager that multiplexes a physical "
+DESC+="terminal between several processes"
 
-BUILDARCH=32
-CONFIGURE_OPTS+="
-	--bindir=/usr/bin
-	--with-sys-screenrc=/etc/screenrc
-	--enable-colors256
-	LDFLAGS=-lxnet
+set_arch 64
+
+CONFIGURE_OPTS_WS="
+    --with-sys-screenrc=/etc/screenrc
+    --enable-colors256
+    LDFLAGS=\"-m64 -lxnet\"
 "
 
 save_function make_install make_install_orig
@@ -48,15 +46,15 @@ make_install() {
     logmsg "Installing /etc/screenrc"
     logcmd mkdir $DESTDIR/etc || logerr "-- Failed to mkdir $DESTDIR/etc"
     sed '
-	# Remove header that says it is an example that should be installed
-	# in /etc
-	1,/^$/ {
-		/^#/d
-	}
-	/^#autodetach off/c\
+        # Remove header that says it is an example that should be installed
+        # in /etc
+        1,/^$/ {
+            /^#/d
+        }
+        /^#autodetach off/c\
 autodetach on\
 defscrollback 1000
-	/^#startup_message off/s/#//
+        /^#startup_message off/s/#//
     ' < etc/etcscreenrc > $DESTDIR/etc/screenrc
 }
 
@@ -77,4 +75,4 @@ make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

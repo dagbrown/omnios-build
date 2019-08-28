@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,32 +18,30 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2016 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=ntp
-VER=4.2.8p10
-VERHUMAN=$VER
+VER=4.2.8p13
 PKG=service/network/ntp
 SUMMARY="Network Time Services"
-DESC="$SUMMARY"
+DESC="An implementation of Network Time Protocol Version 4"
 
-BUILDARCH=32
+set_arch 64
 
-DEPENDS_IPS="SUNWcs library/security/openssl service/network/dns/mdns system/library/math system/library runtime/perl"
-
-CFLAGS="$CFLAGS -std=c99 -D_XOPEN_SOURCE=600 -D__EXTENSIONS__"
-CONFIGURE_OPTS_32="--prefix=/usr
+CONFIGURE_OPTS_64+="
     --bindir=/usr/sbin
     --with-binsubdir=sbin
     --libexecdir=/usr/lib/inet
     --sysconfdir=/etc/inet
+    --with-openssl-libdir=/lib
+"
+
+CONFIGURE_OPTS="
     --enable-all-clocks
     --enable-debugging
     --enable-debug-timing
@@ -53,14 +51,12 @@ CONFIGURE_OPTS_32="--prefix=/usr
     --without-ntpsnmpd
     --without-sntp
     --without-lineeditlibs
-    --with-openssl-libdir=/lib
 "
 
+SKIP_LICENCES="UD Open Source"
+
 overlay_root() {
-    logcmd rm -f $DESTDIR/usr/sbin/tickadj
-    logcmd ln -s ntpdc $DESTDIR/usr/sbin/xntpdc
     (cd $SRCDIR/root && tar cf - .) | (cd $DESTDIR && tar xf -)
-    logcmd mkdir -p $DESTDIR/var/ntp/ntpstats
 }
 
 init
@@ -69,12 +65,11 @@ patch_source
 prep_build
 build
 overlay_root
-make_isa_stub
-#NOTE: Uncomment these IFF we go back to ntp-dev versions or p-releases again.
-#VER=${VER//dev-/}
+install_smf network ntp.xml ntp
+VERHUMAN=$VER
 VER=${VER//p/.}
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

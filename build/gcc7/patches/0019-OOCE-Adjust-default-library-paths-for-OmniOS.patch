@@ -1,0 +1,38 @@
+From 6155fc5a019b533550dace1fdefff0ae96a8cfd0 Mon Sep 17 00:00:00 2001
+From: Andy Fiddaman <omnios@citrus-it.co.uk>
+Date: Thu, 9 May 2019 13:43:30 +0000
+Subject: OOCE: Adjust default library paths for OmniOS
+
+---
+ gcc/config/sol2.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/gcc/config/sol2.h b/gcc/config/sol2.h
+index ff34bd74e66..6cf6b6ac9cd 100644
+--- a/gcc/config/sol2.h
++++ b/gcc/config/sol2.h
+@@ -247,8 +247,8 @@ along with GCC; see the file COPYING3.  If not see
+   "%{G:-G} \
+    %{YP,*} \
+    %{R*} \
+-   %{!YP,*:%{p|pg:-Y P,%R/usr/lib/libp%R/lib:%R/usr/lib} \
+-	   %{!p:%{!pg:-Y P,%R/lib:%R/usr/lib}}}"
++   %{!YP,*:%{p|pg:-Y P,%R/usr/gcc/7/lib:%R/lib:%R/usr/lib -R %R/usr/gcc/7/lib -L %R/usr/gcc/7/lib} \
++	   %{!p:%{!pg:-Y P,%R/usr/gcc/7/lib:%R/lib:%R/usr/lib -R %R/usr/gcc/7/lib -L %R/usr/gcc/7/lib}}}"
+ 
+ #undef LINK_ARCH32_SPEC
+ #define LINK_ARCH32_SPEC LINK_ARCH32_SPEC_BASE
+@@ -260,8 +260,8 @@ along with GCC; see the file COPYING3.  If not see
+   "%{G:-G} \
+    %{YP,*} \
+    %{R*} \
+-   %{!YP,*:%{p|pg:-Y P,%R/usr/lib/libp/" ARCH64_SUBDIR ":%R/lib/" ARCH64_SUBDIR ":%R/usr/lib/" ARCH64_SUBDIR "}	\
+-	   %{!p:%{!pg:-Y P,%R/lib/" ARCH64_SUBDIR ":%R/usr/lib/" ARCH64_SUBDIR "}}}"
++   %{!YP,*:%{p|pg:-Y P,%R/usr/gcc/7/lib/" ARCH64_SUBDIR ":%R/lib/" ARCH64_SUBDIR ":%R/usr/lib/" ARCH64_SUBDIR " -R %R/usr/gcc/7/lib/" ARCH64_SUBDIR " -L %R/usr/gcc/7/lib/" ARCH64_SUBDIR "}	\
++	   %{!p:%{!pg:-Y P,%R/usr/gcc/7/lib/" ARCH64_SUBDIR ":%R/lib/" ARCH64_SUBDIR ":%R/usr/lib/" ARCH64_SUBDIR " -R %R/usr/gcc/7/lib/" ARCH64_SUBDIR " -L %R/usr/gcc/7/lib/" ARCH64_SUBDIR "}}}"
+ 
+ #undef LINK_ARCH64_SPEC
+ #ifndef USE_GLD
+-- 
+2.21.0
+

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,47 +18,42 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2016 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=pciutils
-VER=3.5.5
+VER=3.6.2
 VERHUMAN=$VER
 PKG=system/pciutils
-SUMMARY="Programs (lspci, setpci) for inspecting and manipulating configuration of PCI devices"
-DESC="$SUMMARY"
+SUMMARY="PCI device utilities"
+DESC="Programs (lspci, setpci) for inspecting and manipulating configuration of PCI devices"
 
-DEPENDS_IPS="system/pciutils/pci.ids@2.2"
+RUN_DEPENDS_IPS="system/pciutils/pci.ids"
 
-BUILDARCH=32
-NO_PARALLEL_MAKE=1
+set_arch 64
 
 export PATH=/usr/gnu/bin:$PATH
 
-configure32() {
-    export CC PREFIX
+configure64() {
+    LDFLAGS+=" $LDFLAGS64"
+    export LDFLAGS CC PREFIX
 }
 
 make_prog() {
-    [[ -n $NO_PARALLEL_MAKE ]] && MAKE_JOBS=""
-    if [[ -n $LIBTOOL_NOSTDLIB ]]; then
-        libtool_nostdlib $LIBTOOL_NOSTDLIB $LIBTOOL_NOSTDLIB_EXTRAS
-    fi
     logmsg "--- make"
-    logcmd $MAKE $MAKE_JOBS PREFIX=$PREFIX OPT="-O2 -DBYTE_ORDER=1234 -DLITTLE_ENDIAN=1234" || \
-        logerr "--- Make failed"
+    logcmd $MAKE PREFIX=$PREFIX \
+        OPT="-O2 -m64 -DBYTE_ORDER=1234 -DLITTLE_ENDIAN=1234" \
+        || logerr "--- Make failed"
 }
 
 make_install() {
     logmsg "--- make install"
-    logcmd $MAKE DESTDIR=${DESTDIR} PREFIX=$PREFIX install || \
-        logerr "--- Make install failed"
+    logcmd $MAKE DESTDIR=${DESTDIR} PREFIX=$PREFIX install \
+        || logerr "--- Make install failed"
 }
 
 init
@@ -66,9 +61,8 @@ download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
-make_isa_stub
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

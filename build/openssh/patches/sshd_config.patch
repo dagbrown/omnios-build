@@ -1,8 +1,7 @@
-diff -ru openssh-7.1p1.orig/sshd_config openssh-7.1p1/sshd_config
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/sshd_config openssh-7.5p1/sshd_config
---- openssh-7.5p1~/sshd_config	2017-03-20 03:39:27.000000000 +0000
-+++ openssh-7.5p1/sshd_config	2017-10-06 12:34:44.215245761 +0000
-@@ -30,7 +30,7 @@
+diff -wpruN '--exclude=*.orig' a~/sshd_config a/sshd_config
+--- a~/sshd_config	1970-01-01 00:00:00
++++ a/sshd_config	1970-01-01 00:00:00
+@@ -29,7 +29,7 @@
  # Authentication:
  
  #LoginGraceTime 2m
@@ -11,7 +10,7 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/sshd_config openssh-7.5p1/sshd_conf
  #StrictModes yes
  #MaxAuthTries 6
  #MaxSessions 10
-@@ -89,7 +89,7 @@ AuthorizedKeysFile	.ssh/authorized_keys
+@@ -88,7 +88,7 @@ AuthorizedKeysFile	.ssh/authorized_keys
  #X11DisplayOffset 10
  #X11UseLocalhost yes
  #PermitTTY yes
@@ -19,4 +18,4 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/sshd_config openssh-7.5p1/sshd_conf
 +PrintMotd no
  #PrintLastLog yes
  #TCPKeepAlive yes
- #UseLogin no
+ #PermitUserEnvironment no

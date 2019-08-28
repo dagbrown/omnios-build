@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,18 +18,15 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
-# Use is subject to license terms.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=tar
-VER=1.29
+VER=1.32
 PKG=archiver/gnu-tar
 SUMMARY="gtar - GNU tar"
 DESC="GNU tar - A utility used to store, backup, and transport files (gtar)"
@@ -42,12 +39,12 @@ RUN_DEPENDS_IPS="
     compress/xz
 "
 
-BUILDARCH=32
+set_arch 64
 
-CONFIGURE_OPTS="--program-prefix=g --with-rmt=/usr/sbin/rmt"
-CONFIGURE_OPTS_32+=" --bindir=/usr/bin"
-
-[ -n "$BATCH" ] && SKIP_TESTSUITE=1
+CONFIGURE_OPTS="
+    --program-prefix=g
+    --with-rmt=/usr/sbin/rmt
+"
 
 init
 download_source $PROG $PROG $VER
@@ -55,9 +52,8 @@ patch_source
 prep_build
 build
 run_testsuite check
-make_isa_stub
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

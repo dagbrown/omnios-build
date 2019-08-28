@@ -1,4 +1,4 @@
-no-glib-main-loop-unref.patch
 ucontext.patch
 lock.patch
 nicInfo.patch
+gnu-ld.patch

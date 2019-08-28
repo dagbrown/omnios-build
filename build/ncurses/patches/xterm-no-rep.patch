@@ -7,17 +7,15 @@ the xterm terminal definition in OmniOS.
 
 See also http://invisible-island.net/ncurses/ncurses.faq.html#xterm_generic
 
---- ncurses-6.0-20170729/misc/terminfo.src	2017-07-30 00:10:59.000000000 +0000
-+++ ncurses-6.0-20170722/misc/terminfo.src	2017-05-14 01:32:04.000000000 +0000
-@@ -4180,9 +4180,8 @@
+diff -wpruN '--exclude=*.orig' a~/misc/terminfo.src a/misc/terminfo.src
+--- a~/misc/terminfo.src	1970-01-01 00:00:00
++++ a/misc/terminfo.src	1970-01-01 00:00:00
+@@ -4492,7 +4492,7 @@ xterm-xfree86|xterm terminal emulator (X
+ # This version reflects the current xterm features.
  xterm-new|modern xterm terminal emulator,
  	npc,
- 	indn=\E[%p1%dS, kb2=\EOE, kcbt=\E[Z, kent=\EOM,
--	rin=\E[%p1%dT, use=ansi+rep, use=ansi+enq,
--	use=xterm+pcfkeys, use=xterm+tmux, use=ecma+strikeout,
--	use=xterm-basic,
-+	rin=\E[%p1%dT, use=ansi+enq, use=xterm+pcfkeys,
-+	use=xterm+tmux, use=ecma+strikeout, use=xterm-basic,
- 
- # This fragment is for people who cannot agree on what the backspace key
- # should send.
+-	kcbt=\E[Z, kent=\EOM, use=ecma+index, use=ansi+rep,
++	kcbt=\E[Z, kent=\EOM, use=ecma+index,
+ 	use=ecma+strikeout, use=xterm+keypad, use=vt420+lrmm,
+ 	use=xterm+sm+1006, use=xterm+pcfkeys, use=xterm+tmux,
+ 	use=xterm-basic,

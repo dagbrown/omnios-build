@@ -8,7 +8,7 @@ repositories. For each step, the full commands are included for
 reference but many can be performed more easily using the
 [omni utility][omniutil].
 
-`omni` commands are shown prefixed with a 
+`omni` commands are shown prefixed with a
 ![#f03c15](https://placehold.it/15/1589f0/000000?text=+) symbol.
 
 ## Initial repository configuration
@@ -136,7 +136,7 @@ nothing to commit, working tree clean
 ### Process for a failed merge
 
 Sometimes the merge will fail and produce conflicts which require manual
-intervention.Conflicts will be due to OmniOS-specific changes or because
+intervention. Conflicts will be due to OmniOS-specific changes or because
 of the incorporation of LX Zones and accompanying infrastructure.
 
 ```

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,27 +18,26 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=libsigc++
-VER=2.99.9
+VER=2.99.13
 VERHUMAN=$VER
 PKG=library/c++/sigcpp
-SUMMARY="Libsigc++ - a library that implements typesafe callback system"
+SUMMARY="libsigc++ - a library that implements typesafe callback system"
 DESC="$SUMMARY"
 
-MAKE=/bin/gmake
 export MAKE
 CONFIGURE_OPTS="--includedir=/usr/include"
 
-[ -n "$BATCH" ] && SKIP_TESTSUITE=1
+TESTSUITE_SED="
+    /CXX/d
+"
 
 init
 download_source $PROG $PROG $VER
@@ -51,4 +50,4 @@ make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

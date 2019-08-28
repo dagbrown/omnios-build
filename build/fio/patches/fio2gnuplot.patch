@@ -1,21 +1,15 @@
-diff -bur fio-2.1.10.pristine/tools/plot/fio2gnuplot fio-2.1.10/tools/plot/fio2gnuplot
---- fio-2.1.10.pristine/tools/plot/fio2gnuplot	2014-06-10 15:18:38.000000000 -0400
-+++ fio-2.1.10/tools/plot/fio2gnuplot	2014-07-29 13:02:35.000000000 -0400
-@@ -1,4 +1,4 @@
--#!/usr/bin/env python
-+#!/usr/bin/python2.7
- #
- #  Copyright (C) 2013 eNovance SAS <licensing@enovance.com>
- #  Author: Erwan Velu  <erwan@enovance.com>
-@@ -401,9 +401,9 @@
+diff -wpruN '--exclude=*.orig' fio-fio-3.7~/tools/plot/fio2gnuplot fio-fio-3.7/tools/plot/fio2gnuplot
+--- fio-fio-3.7~/tools/plot/fio2gnuplot	2018-06-01 21:21:56.000000000 +0000
++++ fio-fio-3.7/tools/plot/fio2gnuplot	2018-06-05 14:19:06.244339535 +0000
+@@ -406,9 +406,9 @@ def main(argv):
      force_keep_temp_files=False
  
      if not os.path.isfile(gpm_dir+'math.gpm'):
 -	    gpm_dir="/usr/local/share/fio/"
 +	    gpm_dir="/usr/share/fio/"
      	    if not os.path.isfile(gpm_dir+'math.gpm'):
--		    print "Looks like fio didn't get installed properly as no gpm files found in '/usr/share/fio' or '/usr/local/share/fio'\n"
-+		    print "Looks like fio didn't get installed properly as no gpm files found in '/usr/share/fio'\n"
+-		    print("Looks like fio didn't get installed properly as no gpm files found in '/usr/share/fio' or '/usr/local/share/fio'\n")
++		    print("Looks like fio didn't get installed properly as no gpm files found in '/usr/share/fio'\n")
  		    sys.exit(3)
  
      try:

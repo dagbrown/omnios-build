@@ -1,0 +1,39 @@
+# {{{ CDDL HEADER
+#
+# This file and its contents are supplied under the terms of the
+# Common Development and Distribution License ("CDDL"), version 1.0.
+# You may only use this file in accordance with the terms of version
+# 1.0 of the CDDL.
+#
+# A full copy of the text of the CDDL should have accompanied this
+# source. A copy of the CDDL is also available via the Internet at
+# http://www.illumos.org/license/CDDL.
+# }}}
+#
+# Copyright 2017 OmniOS Community Edition.  All rights reserved.
+
+user username=dma uid=26 group=mail gcos-field="DragonFly Mail Agent" \
+    home-dir=/ password=NP
+
+<transform dir path=var/mail$ -> drop>
+<transform file path=etc/dma/ -> set preserve renamenew>
+<transform file dir path=etc/dma -> set group mail>
+<transform file path=usr/lib/smtp/dma -> set group mail>
+<transform file path=usr/lib/smtp/dma/dma -> set mode 2755>
+<transform file path=usr/lib/smtp/dma/dma-mbox-create -> set mode 4754>
+<transform dir path=var/spool/dma -> set mode 0770>
+<transform dir path=var/spool/dma -> set group mail>
+
+# Mediated symlinks
+link path=usr/bin/mailq mediator=mta mediator-implementation=dma \
+    mediator-priority=vendor target=../lib/smtp/dma/dma
+link path=usr/lib/sendmail mediator=mta mediator-implementation=dma \
+    mediator-priority=vendor target=../lib/smtp/dma/dma
+link path=usr/sbin/sendmail mediator=mta mediator-implementation=dma \
+    mediator-priority=vendor target=../lib/smtp/dma/dma
+link path=usr/sbin/newaliases mediator=mta mediator-implementation=dma \
+    mediator-priority=vendor target=../lib/smtp/dma/dma
+link path=etc/aliases mediator=mta mediator-implementation=dma \
+    mediator-priority=vendor target=./dma/aliases
+
+license LICENSE license=simplified-BSD

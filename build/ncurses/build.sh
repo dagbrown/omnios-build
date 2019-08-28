@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,23 +18,18 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=ncurses
-VER=6.0-20171014
-VERHUMAN=$VER
-BUILDDIR=$PROG-$VER
-VER=${VER/-/.}
+VER=6.1-20190728
 PKG=library/ncurses
-SUMMARY="A CRT screen handling and optimization package."
-DESC="$SUMMARY"
+SUMMARY="A CRT screen handling package"
+DESC="Utilities and shared libraries for terminal handling"
 
 DEPENDS_IPS="shell/bash system/library"
 
@@ -51,8 +46,11 @@ CONFIGURE_OPTS_COMMON="
     --disable-lib-suffixes
     --without-debug
     --enable-string-hacks
+    --enable-symlinks
     --includedir=$PREFIX/include/ncurses
     --prefix=$GPREFIX
+    --with-terminfo-dirs=$GPREFIX/share/terminfo
+    --with-default-terminfo-dir=$GPREFIX/share/terminfo
 "
 CONFIGURE_OPTS_ABI6="$CONFIGURE_OPTS_COMMON"
 CONFIGURE_OPTS_ABI5="$CONFIGURE_OPTS_COMMON --with-abi-version=5"
@@ -64,45 +62,39 @@ CONFIGURE_OPTS_64="
     --libdir=$GPREFIX/lib/$ISAPART64"
 
 gnu_links() {
-    mkdir -p $DESTDIR/$GPREFIX/bin
-    for cmd in captoinfo clear infocmp infotocap reset tic toe tput tset ; do
-        ln -s ../../bin/g$cmd $DESTDIR/$GPREFIX/bin/$cmd
-    done
-    # put libncurses* in PREFIX/lib so other programs don't need to link with rpath
+    # put libncurses* in PREFIX/lib so other programs don't need to link
+    # with rpath
     mkdir -p $DESTDIR/$PREFIX/lib/$ISAPART64
     mv $DESTDIR/$GPREFIX/lib/libncurses* $DESTDIR/$PREFIX/lib
-    mv $DESTDIR/$GPREFIX/lib/$ISAPART64/libncurses* $DESTDIR/$PREFIX/lib/$ISAPART64
+    mv $DESTDIR/$GPREFIX/lib/$ISAPART64/libncurses* \
+       $DESTDIR/$PREFIX/lib/$ISAPART64
 }
 
-save_function make_install make_install_orig
-make_install_libs() {
-    logmsg "--- make install.libs"
-    logcmd $MAKE DESTDIR=${DESTDIR} install.libs || \
-        logerr "--- Make install.libs failed"
-}
 build_abi5() {
     logmsg '--- Building backward-compatible ABI version 5 libraries.'
     CONFIGURE_OPTS="$CONFIGURE_OPTS_ABI5"
-    save_function make_install_libs make_install
+    MAKE_INSTALL_TARGET=install.libs
     build
 }
+
 build_abi6() {
     logmsg '--- Building ABI version 6.'
     CONFIGURE_OPTS="$CONFIGURE_OPTS_ABI6"
-    save_function make_install_orig make_install
+    MAKE_INSTALL_TARGET=install
     build
 }
 
 init
-download_source $PROG $PROG $VERHUMAN
+download_source $PROG $PROG $VER
 patch_source
 prep_build
 build_abi5
 build_abi6
 make_isa_stub
 gnu_links
+VER=${VER/-/.}
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

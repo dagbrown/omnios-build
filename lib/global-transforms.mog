@@ -23,7 +23,7 @@
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
 # Use is subject to license terms.
 # Copyright (c) 2014 by Delphix. All rights reserved.
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 #
 # Make all directories usable
 <transform dir -> default mode 0755>
@@ -106,6 +106,9 @@
 # Drop everything under /var/run since it's tmpfs
 <transform file dir link hardlink path=var/run/ -> drop>
 
+# Drop compiled optimised python files
+<transform file path=.*\.pyo$ -> drop>
+
 # SMF manifests should be imported upon pkg install
 <transform file path=(var|lib)/svc/manifest/.*\.xml -> \
     add restart_fmri svc:/system/manifest-import:default>
@@ -113,6 +116,10 @@
 # Set the doc.man facet on man pages
 <transform dir file link hardlink path=usr/.+/man(/.+)? -> \
     default facet.doc.man true>
+
+# man pages should trigger a whatis database rebuild
+<transform file link path=usr/share/man/.*\.\d[a-z]*$ -> \
+    add restart_fmri svc:/system/rebuild-whatis:default>
 
 # Transforms to set facet.devel on files useful to developers only.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,48 +18,58 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2016 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=vim
-VER=8.0.586
+VER=8.1
+PATCHLEVEL=1909
 PKG=editor/vim
 SUMMARY="Vi IMproved"
-DESC="$SUMMARY"
+DESC="Advanced text editor that provides the power of the UNIX vi editor "
+DESC+="with a more complete feature set."
 
-#BUILDDIR=${PROG}${VER/./}     # Location of extracted source
-BUILDDIR=vim80
-BUILDARCH=32
+SVER=${VER//./}
+set_builddir "$PROG$SVER"
+
+set_arch 64
+
+XFORM_ARGS+=" -D SVER=$SVER"
+
+SKIP_LICENCES="*"
 
 # VIM 8.0 source exposes either a bug in illumos msgfmt(1), OR it contains
 # a GNU-ism we are strict about.  Either way, use GNU msgfmt for now.
 export MSGFMT=/usr/gnu/bin/msgfmt
 
-# We're only shipping 32-bit so forgo isaexec
 CONFIGURE_OPTS="
-    --bindir=$PREFIX/bin
     --with-features=huge
     --without-x
     --disable-gui
     --disable-gtktest
 "
-reset_configure_opts
+
+extract_licence() {
+    sed -n < $DESTDIR/usr/share/vim/vim$SVER/doc/uganda.txt \
+           > $DESTDIR/usr/share/vim/vim$SVER/LICENCE '
+        /=== begin of license ===/,/=== end of license ===/p
+    '
+}
 
 init
 download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
-make_isa_stub
+extract_licence
+VER+=".$PATCHLEVEL"
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

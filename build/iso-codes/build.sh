@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,43 +18,34 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=iso-codes
-VER=3.76
-VERHUMAN=$VER
+VER=4.3
 PKG=data/iso-codes
 SUMMARY="ISO code lists and translations"
-DESC="$SUMMARY"
+DESC="Lists of various ISO standards "
+DESC+="(e.g. country, language, language scripts, and currency names)"
 
-# As of 3.70, iso-codes needs Python3 to build. Make sure python3 is around.
-BUILD_DEPENDS_IPS="ooce/runtime/python-36"
-export PATH=/opt/ooce/bin:$PATH
+BUILD_DEPENDS_IPS="data/iso-codes"
 
-BUILDARCH=32
+BUILDDIR=$PROG-$PROG-$VER
 
-# Upstream doesn't ship any of the translations, so we won't either
-remove_translations() {
-    logmsg "Removing translation files"
-    logcmd rm -rf $DESTDIR$PREFIX/share/locale
-}
+set_arch 64
 
 init
 download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
-remove_translations
-make_isa_stub
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

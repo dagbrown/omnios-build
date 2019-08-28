@@ -4,12 +4,12 @@ Date: Wed, 5 Aug 2015 12:25:15 -0700
 Subject: [PATCH 21/34] Try to create privsep chroot dir if it doesn't exist
  yet
 
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/sshd.c openssh-7.5p1/sshd.c
---- openssh-7.5p1~/sshd.c	2017-10-06 12:34:44.922304665 +0000
-+++ openssh-7.5p1/sshd.c	2017-10-06 12:34:45.278528289 +0000
-@@ -1776,11 +1776,30 @@ main(int ac, char **av)
+diff -wpruN '--exclude=*.orig' a~/sshd.c a/sshd.c
+--- a~/sshd.c	1970-01-01 00:00:00
++++ a/sshd.c	1970-01-01 00:00:00
+@@ -1819,11 +1819,30 @@ main(int ac, char **av)
  
- 	if (use_privsep) {
+ 	if (privsep_chroot) {
  		struct stat st;
 +		int rc;
  

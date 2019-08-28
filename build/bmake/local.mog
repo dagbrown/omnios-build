@@ -1,3 +1,0 @@
-# Prevents pkgdepend from freaking out.
-
-<transform file path=usr/share/mk/meta2deps.py -> set pkg.depend.bypass-generate .*>

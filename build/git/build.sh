@@ -1,50 +1,58 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER
 #
-# The contents of this file are subject to the terms of the
-# Common Development and Distribution License, Version 1.0 only
-# (the "License").  You may not use this file except in compliance
-# with the License.
+# This file and its contents are supplied under the terms of the
+# Common Development and Distribution License ("CDDL"), version 1.0.
+# You may only use this file in accordance with the terms of version
+# 1.0 of the CDDL.
 #
-# You can obtain a copy of the license at usr/src/OPENSOLARIS.LICENSE
-# or http://www.opensolaris.org/os/licensing.
-# See the License for the specific language governing permissions
-# and limitations under the License.
+# A full copy of the text of the CDDL should have accompanied this
+# source. A copy of the CDDL is also available via the Internet at
+# http://www.illumos.org/license/CDDL.
+# }}}
 #
-# When distributing Covered Code, include this CDDL HEADER in each
-# file and include the License file at usr/src/OPENSOLARIS.LICENSE.
-# If applicable, add the following below this CDDL HEADER, with the
-# fields enclosed by brackets "[]" replaced with your own identifying
-# information: Portions Copyright [yyyy] [name of copyright owner]
-#
-# CDDL HEADER END
-#
-#
-# Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
 # Copyright (c) 2014 by Delphix. All rights reserved.
-#
-# Load support functions
+# Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=git
-VER=2.14.3
+VER=2.23.0
 PKG=developer/versioning/git
-SUMMARY="$PROG - a free and open source, distributed version control system"
-DESC="$SUMMARY"
+SUMMARY="$PROG - distributed version control system"
+DESC="Git is a free and open source distributed version control system "
+DESC+="designed to handle everything from small to very large projects with "
+DESC+="speed and efficiency."
 
-BUILD_DEPENDS_IPS="compatibility/ucb developer/build/autoconf archiver/gnu-tar"
+BUILD_DEPENDS_IPS="
+    compatibility/ucb
+    developer/build/autoconf
+    archiver/gnu-tar
+"
+
+HARDLINK_TARGETS="
+    usr/libexec/git-core/git
+    usr/libexec/amd64/git-core/git
+    usr/libexec/git-core/git-remote-ftp
+    usr/libexec/amd64/git-core/git-remote-ftp
+    usr/libexec/git-core/git-cvsserver
+    usr/libexec/amd64/git-core/git-cvsserver
+    usr/libexec/git-core/git-shell
+    usr/libexec/amd64/git-core/git-shell
+"
 
 # For inet_ntop which isn't detected properly in the configure script
 LDFLAGS="-lnsl"
-CFLAGS64="$CFLAGS64 -I/usr/include/amd64"
-# Explicitly call out python version to make future python version bumps
-# smoother.
-CONFIGURE_OPTS="--without-tcltk
-    --with-python=/usr/bin/python2.7
+CFLAGS64+=" -I/usr/include/amd64"
+CONFIGURE_OPTS="
+    --without-tcltk
     --with-curl=/usr
-    --with-openssl=/usr"
+    --with-openssl=/usr
+"
+
+MAKE_INSTALL_ARGS+=" perllibdir=/usr/lib/site_perl"
 
 save_function configure32 configure32_orig
 configure32() {
@@ -60,7 +68,7 @@ configure64() {
 
 install_man() {
     logmsg "Fetching and installing pre-built man pages"
-    if [[ ! -f ${TMPDIR}/${PROG}-manpages-${VER}.tar.xz ]]; then
+    if [ ! -f ${TMPDIR}/${PROG}-manpages-${VER}.tar.xz ]; then
         pushd $TMPDIR > /dev/null
         get_resource $PROG/${PROG}-manpages-${VER}.tar.xz || \
             logerr "--- Failed to fetch tarball"
@@ -73,6 +81,25 @@ install_man() {
     popd > /dev/null
 }
 
+install_pod() {
+    pushd ${DESTDIR}${PREFIX} > /dev/null
+    mkdir -p share/man/man3
+    find lib/site_perl -name \*.pm | grep -v CPAN | while read p; do
+        man="`echo $p | sed 's/\.pm$//' | cut -d/ -f3- | sed 's^/^::^g'`"
+        pod2man $p > share/man/man3/$man.3 || rm -f share/man/man3/$man.3
+    done
+    popd > /dev/null
+}
+
+TESTSUITE_SED="
+    /test_submodule/s/:.*//
+    /I18N/s/I18N .*/I18N/
+    /^ok /d
+    /^gmake/d
+    /^[0-9][0-9]*\.\.[0-9]/d
+    /No differences encountered/d
+"
+
 init
 download_source $PROG $PROG $VER
 patch_source
@@ -81,5 +108,10 @@ build
 run_testsuite
 make_isa_stub
 install_man
+install_pod
+strip_install
 make_package
 clean_up
+
+# Vim hints
+# vim:ts=4:sw=4:et:fdm=marker

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,57 +18,27 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=mercurial
-VER=4.3.3
+VER=5.1
 PKG=developer/versioning/mercurial
-SUMMARY="$PROG - a free and open source, distributed version control system"
-DESC="$SUMMARY"
+SUMMARY="Mercurial source control management"
+DESC="Free, distributed source control management tool"
 
-DEPENDS_IPS="web/curl library/security/openssl"
+# Mercurial currently has beta support for Python 3 and use of Python 2.7 is
+# recommended for the best experience.
+# See https://www.mercurial-scm.org/wiki/Python3 for more on Mercurial's
+# Python 3 support.
 
-# For inet_ntop which isn't detected properly in the configure script
-CONFIGURE_OPTS=""
+set_python_version $PYTHON2VER
 
-PYTHONPATH=/usr
-PYTHON=$PYTHONPATH/bin/python2.7
-PYTHONLIB=$PYTHONPATH/lib
-
-python_build() {
-    logmsg "Building using python setup.py"
-    pushd $TMPDIR/$BUILDDIR > /dev/null
-    ISALIST=i386
-    export ISALIST
-    logmsg "--- setup.py (32) build"
-    logcmd $PYTHON ./setup.py build ||
-        logerr "--- build failed"
-    logmsg "--- setup.py (32) install"
-    logcmd $PYTHON \
-        ./setup.py install --root=$DESTDIR ||
-        logerr "--- install failed"
-
-    ISALIST="amd64 i386"
-    export ISALIST
-    logmsg "--- setup.py (64) build"
-    logcmd $PYTHON ./setup.py build ||
-        logerr "--- build failed"
-    logmsg "--- setup.py (64) install"
-    logcmd $PYTHON \
-        ./setup.py install --root=$DESTDIR ||
-        logerr "--- install failed"
-    popd > /dev/null
-
-    mv $DESTDIR/usr/lib/python2.7/site-packages $DESTDIR/usr/lib/python2.7/vendor-packages ||
-        logerr "Cannot move from site-packages to vendor-packages"
-}
+RUN_DEPENDS_IPS="web/curl library/security/openssl"
 
 init
 download_source $PROG $PROG $VER
@@ -77,3 +47,6 @@ prep_build
 python_build
 make_package
 clean_up
+
+# Vim hints
+# vim:ts=4:sw=4:et:fdm=marker

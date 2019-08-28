@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,36 +18,39 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2016 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=libidn
-VER=1.33
+VER=1.35
 VERHUMAN=$VER
 PKG=library/libidn
 SUMMARY="The Internationalized Domains Library"
 DESC="IDN - The Internationalized Domains Library"
 
-DEPENDS_IPS="system/library system/library/gcc-5-runtime"
-
 CONFIGURE_OPTS="--disable-static"
-LIBTOOL_NOSTDLIB=libtool
-LIBTOOL_NOSTDLIB_EXTRAS=-lc
 
 init
-download_source $PROG $PROG $VER
-patch_source
 prep_build
-build
+
+# The library major version changed from 11 to 12 with 1.35. We need to
+# continue shipping the older version of the library to support anything
+# linked against it. This builds both versions in order.
+for VER in 1.34 $VER; do
+    set_builddir "$PROG-$VER"
+    download_source $PROG $PROG $VER
+    patch_source
+    build
+done
+
 make_isa_stub
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

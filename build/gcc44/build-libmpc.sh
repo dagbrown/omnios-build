@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,36 +18,31 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 #
-# Load support functions
 . ../../lib/functions.sh
-
-PATH=/usr/gnu/bin:/opt/gcc-4.4.4/bin:$PATH
-export PATH
 
 PROG=mpc
 VER=0.8.2
-VERHUMAN=$VER
 PKG=developer/gcc44/libmpc-gcc44
 SUMMARY="gcc44 - private libmpc"
 DESC="$SUMMARY"
 
+set_gccver 4.4.4
+set_arch 32
+
 BUILD_DEPENDS_IPS="developer/gcc44/libgmp-gcc44 developer/gcc44/libmpfr-gcc44"
-DEPENDS_IPS="developer/gcc44/libgmp-gcc44 developer/gcc44/libmpfr-gcc44"
+RUN_DEPENDS_IPS="developer/gcc44/libgmp-gcc44 developer/gcc44/libmpfr-gcc44"
 
-# This stuff is in its own domain
-PKGPREFIX=""
-
-BUILDARCH=32
-GCCVER=4.4.4
 PREFIX=/opt/gcc-${GCCVER}
 CC=gcc
-CONFIGURE_OPTS="--with-gmp=/opt/gcc-${GCCVER} --with-mpfr=/opt/gcc-${GCCVER}"
+CONFIGURE_OPTS="
+    --with-gmp=/opt/gcc-${GCCVER}
+    --with-mpfr=/opt/gcc-${GCCVER}
+"
 
 make_install32() {
     make_install
@@ -59,6 +54,8 @@ init
 download_source $PROG $PROG $VER
 prep_build
 build
-make_isa_stub
 make_package libmpc.mog depends.mog
 clean_up
+
+# Vim hints
+# vim:ts=4:sw=4:et:fdm=marker

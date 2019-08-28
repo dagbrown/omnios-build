@@ -1,59 +1,55 @@
-<img src="http://www.omniosce.org/OmniOSce_logo.svg" height="128">
+<a href="https://omniosce.org">
+<img src="https://omniosce.org/OmniOSce_logo.svg" height="128">
+</a>
 
-# Release Notes for OmniOSce v11 r151026
+# Release Notes for OmniOSce v11 r151032
 ![#f03c15](https://placehold.it/15/f03c15/000000?text=+) ** These are DRAFT release notes ** ![#f03c15](https://placehold.it/15/f03c15/000000?text=+)
 
-Stable Release, TBC of May 2018
+Stable Release, TBC of November 2019
 
-illumos-omnios branch r151026 at XXX
+`uname -a` shows `omnios-r151032-XXX`
 
-`uname -a` shows `omnios-r151026-XXX`
+r151032 release repository: https://pkg.omniosce.org/r151032/core
 
-r151026 release repository: https://pkg.omniosce.org/r151026/core
+## Upgrade Notes
 
-## New features since r151024
+## New features since r151030
 
 ### System Features
 
-* `libdiskmgt` and therefore `diskinfo` now recognises nvme, sata and xen
-  controllers
+### Commands and Command Options
 
-* The `/etc/screenrc` file delivered by the `screen` package is now based on
-  the recommended global template as delivered by the authors; you may wish
-  to check that it still meets your needs. If you have previously customised
-  this file then it will not be updated but the new template file will be
-  installed as `/etc/screenrc.new`.
+* A new `penv` command is available for viewing the environment of a process
+  or core file; this is equivalent to `pargs -e`
+
+* A new `pauxv` command is available for viewing the auxiliary vector of a
+  process or core file; this is equivalent to `pargs -x`
+
+### Zones
 
 ### LX zones
 
-* Report that `/proc/sys` is writable to keep systemd happy.
+### ZFS
 
-* Emulate a userspace clock of 100Hz to accommodate some broken applications.
+### Package Management
 
 ### Hardware Support
 
-### Commands and Command Options
-
-* `/usr/gnu/bin/uname -o` reports `illumos` as the operating system.
+### Installer
 
 ### Developer Features
 
-* GCC version 7 is now available - `pkg install developer/gcc7` - and can be
-  found in `/opt/gcc-7`.
-  xxx check xxx
-  Note that GCC 7's default standard for C++ is `-std=gnu++14`. This is a
-  change from GCC 5 which used `-std=gnu++98`. Some software may assume
-  gnu++98 and to compile it with GCC 7 you will need to specify
-  `--std=gnu++98` or update the software. More detail on the changes in GCC 7
-  can be found on
-  [the gcc web site](https://gcc.gnu.org/gcc-7/changes.html).
-
-* Perl has been upgraded to 5.26.X. The version of perl shipped with OmniOS
-  is for internal system use and should not be relied on for anything else.
-
 ### Deprecated features
 
-* GCC version 6 will be removed in the next stable version of OmniOS, r151028.
+* Python 2.7 is deprecated and reaches end-of-support at the end of 2019.
+  OmniOS has mostly transitioned to Python 3. A Python 2 package is still
+  available but most previously-shipped modules have been obsoleted.
+
+* Several legacy SunSSH compatibility options for OpenSSH were deprecated
+  with release r151026 and were removed in r151028. Please ensure that the
+  old directives are removed from your configuration files prior to upgrading
+  to this release. Refer to
+  <https://omniosce.org/info/sunssh> for more details.
 
 ### Package changes ([+] Added, [-] Removed, [\*] Changed)
 

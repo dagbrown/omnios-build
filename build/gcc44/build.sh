@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,13 +18,12 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=gcc
@@ -40,44 +39,68 @@ ILLUMOSVER=il-4
 VERHUMAN="${VER}-${ILLUMOSVER}"
 PKG=developer/gcc44
 SUMMARY="gcc ${VER} (illumos il-4_4_4 branch, tag gcc-4.4.4-${ILLUMOSVER})"
-DESC="GCC with the patches from Codesourcery/Sun Microsystems used in the 3.4.3 and 4.3.3 shipped with Solaris. The il-* branches contain the Solaris patches rebased forward across GCC versions in an attempt to bring them up to date."
+DESC="GCC with the patches from Codesourcery/Sun Microsystems used in the "
+DESC+="3.4.3 and 4.3.3 shipped with Solaris."
 
-BUILDDIR=${PROG}-gcc-4.4.4-${ILLUMOSVER}
+set_builddir "${PROG}-gcc-4.4.4-${ILLUMOSVER}"
 
-export LD_LIBRARY_PATH=/opt/gcc-${VER}/lib
-# Build gcc44 only with itself...
-PATH=/usr/perl5/${PERLVER}/bin:/opt/gcc-${VER}/bin:$PATH
-export PATH
+# Build gcc44 with itself...
+set_gccver 4.4.4
+set_arch 32
 
-DEPENDS_IPS="developer/gcc44/libgmp-gcc44 developer/gcc44/libmpfr-gcc44 developer/gcc44/libmpc-gcc44
-	     developer/gnu-binutils developer/library/lint developer/linker system/library/gcc-5-runtime"
-BUILD_DEPENDS_IPS="$DEPENDS_IPS"
+BUILD_DEPENDS_IPS="
+    developer/gcc44/libgmp-gcc44
+    developer/gcc44/libmpfr-gcc44
+    developer/gcc44/libmpc-gcc44
+    developer/gnu-binutils
+    developer/linker
+    system/library/gcc-runtime
+"
+RUN_DEPENDS_IPS="
+    $BUILD_DEPENDS_IPS
+    system/library/c-runtime
+"
 
-# This stuff is in its own domain
-PKGPREFIX=""
-
-BUILDARCH=32
 PREFIX=/opt/gcc-${VER}
 reset_configure_opts
-CC=gcc
-
-LD_FOR_TARGET=/bin/ld
-export LD_FOR_TARGET
-LD_FOR_HOST=/bin/ld
-export LD_FOR_HOST
-LD=/bin/ld
-export LD
 
 HSTRING=i386-pc-solaris2.11
 
+HARDLINK_TARGETS="
+    ${PREFIX/#\/}/bin/$HSTRING-gcc-$VER
+    ${PREFIX/#\/}/bin/$HSTRING-c++
+    ${PREFIX/#\/}/bin/$HSTRING-g++
+    ${PREFIX/#\/}/bin/$HSTRING-gfortran
+"
+
+export LD=/bin/ld
+export LD_FOR_TARGET=$LD
+export LD_FOR_HOST=$LD
+
 CONFIGURE_OPTS_32="--prefix=/opt/gcc-${VER}"
-CONFIGURE_OPTS="--host ${HSTRING} --build ${HSTRING} --target ${HSTRING} \
-    --with-boot-ldflags=-R/opt/gcc-${VER}/lib \
-    --with-gmp=/opt/gcc-${VER} --with-mpfr=/opt/gcc-${VER} --with-mpc=/opt/gcc-${VER} \
-    --enable-languages=c,c++,fortran --without-gnu-ld --with-ld=/bin/ld \
-    --with-as=/usr/bin/gas --with-gnu-as --with-build-time-tools=/usr/gnu/${HSTRING}/bin"
+CONFIGURE_OPTS="
+    --host ${HSTRING}
+    --build ${HSTRING}
+    --target ${HSTRING}
+    --with-boot-ldflags=-R/opt/gcc-${VER}/lib
+    --with-gmp=/opt/gcc-${VER}
+    --with-mpfr=/opt/gcc-${VER}
+    --with-mpc=/opt/gcc-${VER}
+    --enable-languages=c,c++,fortran
+    --without-gnu-ld --with-ld=/bin/ld
+    --with-as=/usr/bin/gas --with-gnu-as
+    --with-build-time-tools=/usr/gnu/${HSTRING}/bin
+"
 LDFLAGS32="-R/opt/gcc-${VER}/lib"
 export LD_OPTIONS="-zignore -zcombreloc -Bdirect -i"
+
+# If the selected compiler is the same version as the one we're building
+# then the three-stage bootstrap is unecessary and some build time can be
+# saved.
+[ -z "$FORCE_BOOTSTRAP" ] \
+    && [ "`gcc -v 2>&1 | nawk '/^gcc version/ { print $3 }'`" = "$VER" ] \
+    && CONFIGURE_OPTS+=" --disable-bootstrap" \
+    && logmsg "--- disabling bootstrap"
 
 init
 download_source gcc44 ${PROG}-gcc-4.4.4-${ILLUMOSVER}
@@ -85,9 +108,8 @@ patch_source
 prep_build
 build
 
-# Ick.  For some bizarre reason, this gcc44 package doesn't properly push
-# the LDFLAGS shown above into various subdirectories.  Use elfedit to fix
-# it.
+# For some reason, this gcc44 package doesn't properly push the LDFLAGS shown
+# above into various subdirectories.  Use elfedit to fix it.
 ESTRING="dyn:runpath /opt/gcc-${VER}/lib:%o"
 elfedit -e "${ESTRING}" ${TMPDIR}/${BUILDDIR}/host-${HSTRING}/gcc/cc1
 elfedit -e "${ESTRING}" ${TMPDIR}/${BUILDDIR}/host-${HSTRING}/gcc/cc1plus
@@ -97,4 +119,4 @@ make_package gcc.mog depends.mog
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

@@ -1,7 +1,7 @@
-diff -pruN '--exclude=*.orig' fio-fio-3.1~/Makefile fio-fio-3.1/Makefile
---- fio-fio-3.1~/Makefile	2017-09-28 12:23:20.000000000 +0000
-+++ fio-fio-3.1/Makefile	2017-09-28 14:05:26.435439450 +0000
-@@ -295,16 +295,19 @@ endif
+diff -wpruN '--exclude=*.orig' fio-fio-3.7~/Makefile fio-fio-3.7/Makefile
+--- fio-fio-3.7~/Makefile	2018-06-01 21:21:56.000000000 +0000
++++ fio-fio-3.7/Makefile	2018-06-05 14:19:06.211331194 +0000
+@@ -305,16 +305,19 @@ endif
  endif
  
  ifeq ($(CONFIG_TARGET_OS), SunOS)

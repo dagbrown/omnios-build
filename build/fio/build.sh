@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,52 +18,36 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2013 OmniTI Computer Consulting, Inc.  All rights reserved.
 # Use is subject to license terms.
 #
 # Copyright (c) 2014, 2016 by Delphix. All rights reserved.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
-PROG=fio        # App name
-VER=3.1        # App version
-VERHUMAN=$VER   # Human-readable version
-#PVER=          # Branch (set in config.sh, override here if needed)
-PKG=system/test/fio # Package name (e.g. library/foo)
-SUMMARY="Flexible IO Tester" # One-liner, must be filled in
-DESC="Flexible IO Tester" # Longer description, must be filled in
-NOSCRIPTSTUB=1  # Don't make isa wrappers for scripts
-BUILDDIR=$PROG-$PROG-$VER
+PROG=fio
+VER=3.15
+VERHUMAN=$VER
+PKG=system/test/fio
+SUMMARY="Flexible IO Tester"
+DESC="A tool that is able to simulate a given I/O workload"
 
-BUILD_DEPENDS_IPS=
-RUN_DEPENDS_IPS=
+set_builddir "$PROG-$PROG-$VER"
+set_arch 64
 
-CONFIGURE_OPTS=
-CONFIGURE_OPTS_32=
-CONFIGURE_OPTS_64="--extra-cflags=-m64"
-
-make_install32() {
-	logcmd $MAKE DESTDIR=${DESTDIR} bindir="/usr/bin/i386" install || \
-	    logerr "--- Make install failed"
-}
-
-make_install64() {
-	logcmd $MAKE DESTDIR=${DESTDIR} bindir="/usr/bin/amd64" install || \
-	    logerr "--- Make install failed"
-}
+CONFIGURE_OPTS_64="--prefix=$PREFIX --extra-cflags=-m64"
+SKIP_LICENCES=fio
 
 init
 download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
-make_isa_stub
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

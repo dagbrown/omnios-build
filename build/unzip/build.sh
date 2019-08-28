@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,13 +18,12 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=unzip
@@ -34,8 +33,13 @@ PKG=compress/unzip
 SUMMARY="The Info-Zip (unzip) compression utility"
 DESC="$SUMMARY"
 
-BUILDDIR=$PROG${VER//./}
-BUILDARCH=32
+set_builddir "$PROG${VER//./}"
+set_arch 32
+
+HARDLINK_TARGETS="
+    usr/bin/unzip
+"
+SKIP_LICENCES="*"
 
 # Copied from upstream's pkg makefile
 export LOCAL_UNZIP="-DUNICODE_SUPPORT -DNO_WORKING_ISPRINT -DUNICODE_WCHAR"
@@ -44,27 +48,18 @@ configure32() {
     export ISAPART
 }
 
-make_prog() {
-    [[ -n $NO_PARALLEL_MAKE ]] && MAKE_JOBS=""
-    logmsg "--- make"
-    logcmd $MAKE $MAKE_JOBS -f unix/Makefile generic_gcc || \
-        logerr "--- Make failed"
-}
-
-make_install() {
-    logmsg "--- make install"
-    logcmd $MAKE -f unix/Makefile prefix=$DESTDIR$PREFIX install || \
-        logerr "--- Make install failed"
-}
+BASE_MAKE_ARGS="-f unix/Makefile"
+MAKE_ARGS="$BASE_MAKE_ARGS generic_gcc"
+MAKE_INSTALL_ARGS="$BASE_MAKE_ARGS install"
 
 init
 download_source $PROG $PROG${VER//./}
 patch_source
 prep_build
+MAKE_INSTALL_ARGS+=" prefix=$DESTDIR$PREFIX"
 build
-make_isa_stub
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

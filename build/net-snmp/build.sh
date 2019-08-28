@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,35 +18,36 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=net-snmp
-VER=5.7.3
+VER=5.8
 VERHUMAN=$VER
 PKG=system/management/snmp/net-snmp
 SUMMARY="Net-SNMP Agent files and libraries"
-DESC="$SUMMARY ($VER)"
+DESC="$SUMMARY"
 
 NO_PARALLEL_MAKE=true
+SKIP_LICENCES="CMU/UCD"
 
-DEPENDS_IPS="SUNWcs shell/bash system/library"
+RUN_DEPENDS_IPS="shell/bash"
 
 MIB_MODULES="host disman/event-mib ucd-snmp/diskio udp-mib tcp-mib if-mib"
 
+CFLAGS+=" -fstack-check"
 LDFLAGS32="-Wl,-zignore $LDFLAGS32 -L/lib"
 LDFLAGS64="-Wl,-zignore $LDFLAGS64 -L/lib/$ISAPART64"
 LNETSNMPLIBS="-lsocket -lnsl"
 
-# We want dual-arch libs but only care about 32-bit binaries
-# We will elide 64-bit binaries with pkgmogrify (local.mog)
-CONFIGURE_OPTS_32="$CONFIGURE_OPTS_32 --bindir=$PREFIX/bin --sbindir=$PREFIX/sbin"
+# Skip isaexec and deliver 64-bit binaries directly to bin and sbin
+# 32-bit binaries are stripped in local.mog
+CONFIGURE_OPTS_64+=" --bindir=$PREFIX/bin --sbindir=$PREFIX/sbin"
 CONFIGURE_OPTS="
     --with-defaults
     --with-default-snmp-version=3
@@ -60,43 +61,38 @@ CONFIGURE_OPTS="
     --enable-ucd-snmp-compatibility
     --enable-ipv6
     --enable-mfd-rewrites
-    --with-pkcs
+    --enable-blumenthal-aes
     --disable-embedded-perl
     --without-perl-modules
     --disable-static
+    --with-sys-contact=root@localhost
+    --without-pkcs
+    --with-openssl=/usr/ssl
 "
 
-# Options with embedded spaces don't play well w/our functions
-configure32() {
-    logmsg "--- configure (32-bit)"
-    CFLAGS="$CFLAGS $CFLAGS32" \
-    CXXFLAGS="$CXXFLAGS $CXXFLAGS32" \
-    CPPFLAGS="$CPPFLAGS $CPPFLAGS32" \
-    LDFLAGS="$LDFLAGS $LDFLAGS32" \
-    LNETSNMPLIBS="$LNETSNMPLIBS" \
-    CC=$CC CXX=$CXX \
-    logcmd $CONFIGURE_CMD $CONFIGURE_OPTS_32 \
-    $CONFIGURE_OPTS --with-sys-contact="root@localhost" \
-                    --with-transports="UDP TCP UDPIPv6 TCPIPv6" \
-                    --with-mib-modules="$MIB_MODULES" || \
-        logerr "--- Configure failed"
-    perl -pi -e 's#^^(archive_cmds=.*)"$#$1 -nostdlib"#g;' libtool
-}
+CONFIGURE_OPTS_WS="
+    --with-transports=\"UDP TCP UDPIPv6 TCPIPv6\"
+    --with-mib-modules=\"$MIB_MODULES\"
+    LNETSNMPLIBS=\"$LNETSNMPLIBS\"
+"
 
-configure64() {
-    logmsg "--- configure (64-bit)"
-    CFLAGS="$CFLAGS $CFLAGS64" \
-    CXXFLAGS="$CXXFLAGS $CXXFLAGS64" \
-    CPPFLAGS="$CPPFLAGS $CPPFLAGS64" \
-    LDFLAGS="$LDFLAGS $LDFLAGS64" \
-    LNETSNMPLIBS="$LNETSNMPLIBS" \
-    CC=$CC CXX=$CXX \
-    logcmd $CONFIGURE_CMD $CONFIGURE_OPTS_64 \
-    $CONFIGURE_OPTS --with-sys-contact="root@localhost" \
-                    --with-transports="UDP TCP UDPIPv6 TCPIPv6" \
-                    --with-mib-modules="$MIB_MODULES" || \
-        logerr "--- Configure failed"
-    perl -pi -e 's#^^(archive_cmds=.*)"$#$1 -nostdlib"#g;' libtool
+TESTSUITE_SED="
+    1,/^..RUNFULLTESTS/d
+    s/([^)]*net-snmp-.*//
+    /^gmake/d
+"
+
+install_legacy()
+{
+    # Include legacy API libraries (changed from .30 -> .35 in 5.8)
+    ver=30
+    for lib in snmp netsnmp netsnmpagent netsnmphelpers netsnmpmibs \
+      netsnmptrapd; do
+        logcmd cp /usr/lib/lib$lib.so.$ver $DESTDIR/usr/lib/ \
+            || logerr "$lib copy failed"
+        logcmd cp /usr/lib/amd64/lib$lib.so.$ver $DESTDIR/usr/lib/amd64/ \
+            || logerr "$lib copy failed"
+    done
 }
 
 init
@@ -104,10 +100,12 @@ download_source $PROG $PROG $VER
 patch_source
 prep_build
 build
+install_legacy
+run_testsuite test
 install_smf application/management net-snmp.xml svc-net-snmp
 strip_install
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

@@ -1,0 +1,35 @@
+
+Python module dependencies
+--------------------------
+
+pkg
+	cherrypy
+		cheroot
+			more-itertools
+			functools_lru_cache
+		portend
+			tempora
+				pytz
+		zc.lockfile
+		contextlib2
+	cryptography
+		six
+		cffi
+		asn1crypto
+		idna
+	jsonrpclib
+	jsonschema
+		attrs
+		pyrsistent
+	mako
+	ply
+	prettytable
+	pybonjour
+	pycurl
+	simplejson
+	coverage
+	pyopenssl
+		cryptography
+
+glib2
+	meson

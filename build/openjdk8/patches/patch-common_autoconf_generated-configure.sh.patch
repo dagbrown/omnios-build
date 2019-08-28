@@ -1,0 +1,116 @@
+diff -wpruN '--exclude=*.orig' a~/common/autoconf/generated-configure.sh a/common/autoconf/generated-configure.sh
+--- a~/common/autoconf/generated-configure.sh	1970-01-01 00:00:00
++++ a/common/autoconf/generated-configure.sh	1970-01-01 00:00:00
+@@ -4137,7 +4137,7 @@ VALID_TOOLCHAINS_all="gcc clang solstudi
+ # These toolchains are valid on different platforms
+ VALID_TOOLCHAINS_bsd="clang gcc"
+ VALID_TOOLCHAINS_linux="gcc clang"
+-VALID_TOOLCHAINS_solaris="solstudio"
++VALID_TOOLCHAINS_solaris="gcc solstudio"
+ VALID_TOOLCHAINS_macosx="gcc clang"
+ VALID_TOOLCHAINS_aix="xlc"
+ VALID_TOOLCHAINS_windows="microsoft"
+@@ -24818,6 +24818,7 @@ $as_echo_n "checking flags for boot jdk
+     JVM_MAX_HEAP=1600M
+     STACK_SIZE=1536
+   fi
++  JVM_MAX_HEAP=800M
+ 
+   $ECHO "Check if jvm arg is ok: -Xmx$JVM_MAX_HEAP" >&5
+   $ECHO "Command: $JAVA -Xmx$JVM_MAX_HEAP -version" >&5
+@@ -41263,6 +41264,14 @@ $as_echo "$ac_cv_c_bigendian" >&6; }
+       SET_SHARED_LIBRARY_ORIGIN="$SET_EXECUTABLE_ORIGIN"
+       SET_SHARED_LIBRARY_NAME='-Xlinker -install_name -Xlinker @rpath/$1'
+       SET_SHARED_LIBRARY_MAPFILE=''
++    elif test "x$OPENJDK_TARGET_OS" = xsolaris; then
++      SHARED_LIBRARY_FLAGS='-shared'
++      SET_SHARED_LIBRARY_ORIGIN='-R\$$$$ORIGIN$1'
++      SET_EXECUTABLE_ORIGIN="$SET_SHARED_LIBRARY_ORIGIN"
++      SET_SHARED_LIBRARY_NAME=''
++      SET_SHARED_LIBRARY_MAPFILE=''
++      CFLAGS_JDK="${CFLAGS_JDK} -D__solaris__"
++      CXXFLAGS_JDK="${CXXFLAGS_JDK} -D__solaris__"
+     else
+       # Default works for linux, might work on other platforms as well.
+       SHARED_LIBRARY_FLAGS='-shared'
+@@ -41308,11 +41317,6 @@ $as_echo "$ac_cv_c_bigendian" >&6; }
+ 
+ 
+ 
+-  if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+-    CFLAGS_JDK="${CFLAGS_JDK} -D__solaris__"
+-    CXXFLAGS_JDK="${CXXFLAGS_JDK} -D__solaris__"
+-    CFLAGS_JDKLIB_EXTRA='-xstrconst'
+-  fi
+   # The (cross) compiler is now configured, we can now test capabilities
+   # of the target platform.
+ 
+@@ -41406,6 +41410,11 @@ $as_echo "$ac_cv_c_bigendian" >&6; }
+         C_O_FLAG_HI="-Os"
+         C_O_FLAG_NORM="-Os"
+         C_O_FLAG_NONE=""
++      elif test "x$OPENJDK_TARGET_OS" = xsolaris; then
++        C_O_FLAG_HIGHEST="-O2"
++        C_O_FLAG_HI="-O2"
++        C_O_FLAG_NORM="-O2"
++        C_O_FLAG_NONE="-O0"
+       else
+         C_O_FLAG_HIGHEST="-O3"
+         C_O_FLAG_HI="-O3"
+@@ -41452,17 +41461,17 @@ $as_echo "$ac_cv_c_bigendian" >&6; }
+   elif test "x$TOOLCHAIN_TYPE" = xgcc; then
+     case $OPENJDK_TARGET_CPU_ARCH in
+     x86 )
+-      LEGACY_EXTRA_CFLAGS="$LEGACY_EXTRA_CFLAGS -fstack-protector"
+-      LEGACY_EXTRA_CXXFLAGS="$LEGACY_EXTRA_CXXFLAGS -fstack-protector"
++      #LEGACY_EXTRA_CFLAGS="$LEGACY_EXTRA_CFLAGS -fstack-protector"
++      #LEGACY_EXTRA_CXXFLAGS="$LEGACY_EXTRA_CXXFLAGS -fstack-protector"
+       ;;
+     x86_64 )
+-      LEGACY_EXTRA_CFLAGS="$LEGACY_EXTRA_CFLAGS -fstack-protector"
+-      LEGACY_EXTRA_CXXFLAGS="$LEGACY_EXTRA_CXXFLAGS -fstack-protector"
++      #LEGACY_EXTRA_CFLAGS="$LEGACY_EXTRA_CFLAGS -fstack-protector"
++      #LEGACY_EXTRA_CXXFLAGS="$LEGACY_EXTRA_CXXFLAGS -fstack-protector"
+       ;;
+     esac
+-    if test "x$OPENJDK_TARGET_OS" != xmacosx; then
++    if test "x$OPENJDK_TARGET_OS" != xsolaris; then
+       LDFLAGS_JDK="$LDFLAGS_JDK -Wl,-z,relro"
+       LEGACY_EXTRA_LDFLAGS="$LEGACY_EXTRA_LDFLAGS -Wl,-z,relro"
+     fi
+     CXXSTD_CXXFLAG="-std=gnu++98"
+ 
+@@ -41579,8 +41588,8 @@ fi
+         # on ppc we don't prevent gcc to omit frame pointer nor strict-aliasing
+         ;;
+       x86 )
+-        CCXXFLAGS_JDK="$CCXXFLAGS_JDK -fno-omit-frame-pointer -fstack-protector"
+-        CFLAGS_JDK="${CFLAGS_JDK} -fno-strict-aliasing -fstack-protector"
++        CCXXFLAGS_JDK="$CCXXFLAGS_JDK -fno-omit-frame-pointer"
++        CFLAGS_JDK="${CFLAGS_JDK} -fno-strict-aliasing"
+         ;;
+       * )
+         CCXXFLAGS_JDK="$CCXXFLAGS_JDK -fno-omit-frame-pointer"
+@@ -43332,11 +43341,8 @@ fi
+ 
+   if test "x$OPENJDK_TARGET_OS" = xsolaris; then
+     OPENWIN_HOME="/usr/openwin"
+-    X_CFLAGS="-I$SYSROOT$OPENWIN_HOME/include -I$SYSROOT$OPENWIN_HOME/include/X11/extensions"
+-    X_LIBS="-L$SYSROOT$OPENWIN_HOME/sfw/lib$OPENJDK_TARGET_CPU_ISADIR \
+-        -L$SYSROOT$OPENWIN_HOME/lib$OPENJDK_TARGET_CPU_ISADIR \
+-        -R$OPENWIN_HOME/sfw/lib$OPENJDK_TARGET_CPU_ISADIR \
+-        -R$OPENWIN_HOME/lib$OPENJDK_TARGET_CPU_ISADIR"
++    X_CFLAGS="-I$x_includes"
++    X_LIBS="-L$x_libraries -R$x_libraries"
+   fi
+ 
+   #
+@@ -47425,7 +47431,7 @@ $as_echo "$as_me: The path of FREETYPE_L
+       if test "x$OPENJDK_TARGET_OS" = xwindows; then
+         FREETYPE_LIBS="$FREETYPE_LIB_PATH/freetype.lib"
+       else
+-        FREETYPE_LIBS="-L$FREETYPE_LIB_PATH -lfreetype"
++        FREETYPE_LIBS="-Xlinker -R$FREETYPE_LIB_PATH -L$FREETYPE_LIB_PATH -lfreetype"
+       fi
+     fi
+ 

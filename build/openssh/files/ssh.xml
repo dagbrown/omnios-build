@@ -23,6 +23,8 @@
 	Copyright 2009 Sun Microsystems, Inc.  All rights reserved.
 	Use is subject to license terms.
 
+	Copyright 2016 Hans Rosenfeld <rosenfeld@grumpf.hope-2000.org>
+
 	NOTE:  This service manifest is not editable; its contents will
 	be overwritten by package or patch operations, including
 	operating system upgrade.  Make customizations in a different
@@ -110,7 +112,9 @@
 		type='method'
 		name='start'
 		exec='/lib/svc/method/sshd start'
-		timeout_seconds='60'/>
+		timeout_seconds='60'>
+		<method_context security_flags='aslr' />
+	</exec_method>
 
 	<exec_method
 		type='method'
@@ -128,14 +132,14 @@
 		type='framework'>
 		<!-- sub-process core dumps shouldn't restart session -->
 		<propval name='ignore_error'
-		    type='astring' value='core,signal' />
+			type='astring' value='core,signal' />
 	</property_group>
 
-        <property_group name='general' type='framework'>
-                <!-- to start stop sshd -->
-                <propval name='action_authorization' type='astring'
-                        value='solaris.smf.manage.ssh' />
-        </property_group>
+	<property_group name='general' type='framework'>
+		<!-- to start stop sshd -->
+		<propval name='action_authorization' type='astring'
+			value='solaris.smf.manage.ssh' />
+	</property_group>
 
 	<property_group name='firewall_context' type='com.sun,fw_definition'>
 		<propval name='name' type='astring' value='ssh' />
@@ -145,8 +149,14 @@
 
 	<property_group name='firewall_config' type='com.sun,fw_configuration'>
 		<propval name='policy' type='astring' value='use_global' />
+		<propval name='block_policy' type='astring'
+			value='use_global' />
 		<propval name='apply_to' type='astring' value='' />
+		<propval name='apply_to_6' type='astring' value='' />
 		<propval name='exceptions' type='astring' value='' />
+		<propval name='exceptions_6' type='astring' value='' />
+		<propval name='target' type='astring' value='' />
+		<propval name='target_6' type='astring' value='' />
 		<propval name='value_authorization' type='astring'
 			value='solaris.smf.value.firewall.config' />
 	</property_group>

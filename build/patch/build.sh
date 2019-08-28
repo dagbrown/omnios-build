@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,32 +18,23 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2015 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=patch
-VER=2.7.5
+VER=2.7.6
 PKG=text/gnu-patch
 SUMMARY="The GNU Patch utility"
-DESC="$SUMMARY"
+DESC="Patch takes a patch file containing a difference listing produced by the "
+DESC+="diff program and applies those differences to one or more original "
+DESC+="files, producing patched versions."
 
-BUILDARCH=32
-CONFIGURE_OPTS_32="
-    --prefix=$PREFIX
-    --sysconfdir=/etc
-    --includedir=$PREFIX/include
-    --bindir=$PREFIX/bin
-    --sbindir=$PREFIX/sbin
-    --libdir=$PREFIX/lib
-    --libexecdir=$PREFIX/libexec
-    --program-prefix=g
-"
+set_arch 64
+CONFIGURE_OPTS="--program-prefix=g"
 
 init
 download_source $PROG $PROG $VER
@@ -51,10 +42,9 @@ patch_source
 prep_build
 build
 run_testsuite check
-make_isa_stub
 strip_install
 make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,80 +18,27 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
-PROG=libxml2        # App name
-VER=2.9.6           # App version
-PKG=library/libxml2 # Package name (without prefix)
-SUMMARY="$PROG - XML C parser and toolkit"
-DESC="$SUMMARY"
+PROG=libxml2
+VER=2.9.9
+PKG=library/libxml2
+SUMMARY="XML C parser and toolkit"
+DESC="Portable XML parser and toolkit library"
 
-DEPENDS_IPS="compress/xz system/library/gcc-5-runtime library/zlib"
-BUILD_DEPENDS_IPS="$DEPENDS_IPS developer/sunstudio12.1"
-# Keep python tied to the version we're supporting, to aid future changes.
-CONFIGURE_OPTS="--with-python=/usr/bin/python2.7"
+RUN_DEPENDS_IPS="compress/xz library/zlib"
 
-fix_python_install() {
-    logcmd mkdir -p $DESTDIR/usr/lib/python2.7/vendor-packages
-    logcmd mv $DESTDIR/usr/lib/python2.7/site-packages/* $DESTDIR/usr/lib/python2.7/vendor-packages/ || logerr "failed relocating python install"
-    logcmd rm -f $DESTDIR/usr/lib/python2.7/vendor-packages/64/drv_libxml2.py
-    logcmd rm -rf $DESTDIR/usr/lib/python2.7/site-packages || logerr "failed removing bad python install"
-    logcmd rm -rf $DESTDIR/usr/include/amd64 || logerr "failed removing bad includes install"
-}
+XFORM_ARGS="-D VER=$VER"
 
-make_prog64() {
-    logcmd perl -pi -e 's#(\$CC.*\$compiler_flags)#$1 -nostdlib#g;' libtool ||
-        logerr "libtool patch failed"
-    logcmd gmake || logerr "Make failed"
-}
+CONFIGURE_OPTS+=" --without-python"
 
-make_prog32() {
-    logcmd perl -pi -e 's#(\$CC.*\$compiler_flags)#$1 -nostdlib#g;' libtool ||
-        logerr "libtool patch failed"
-    logcmd gmake || logerr "Make failed"
-}
-
-make_install64() {
-    logmsg "--- make install"
-    logcmd perl -pi -e 's#(\/site-packages)#$1\/64#g;' python/.libs/libxml2mod.la ||
-        logerr "libtool libxml2mod.la patch failed"
-    logcmd perl -pi -e 's#(\/site-packages)#$1\/64#g;' python/libxml2mod.la ||
-        logerr "libtool libxml2mod.la patch failed"
-
-    logcmd perl -pi -e 's#(\/site-packages)#$1\/64#g;' python/.libs/libxml2mod.lai ||
-        logerr "libtool libxml2mod.la patch failed"
-
-    logcmd $MAKE DESTDIR=${DESTDIR} \
-        PYTHON_SITE_PACKAGES=/usr/lib/python2.7/site-packages/64 \
-        install || \
-        logerr "--- Make install failed"
-}
-
-# Relocate the libs to /lib, to match upstream
-move_libs() {
-    logcmd mkdir -p $DESTDIR/lib/amd64
-    logcmd mv $DESTDIR/usr/lib/lib* $DESTDIR/lib || \
-        logerr "failed to move libs (32-bit)"
-    logcmd mv $DESTDIR/usr/lib/amd64/lib* $DESTDIR/lib/amd64 || \
-        logerr "failed to move libs (64-bit)"
-    pushd $DESTDIR/usr/lib >/dev/null
-    logcmd ln -s ../../lib/libxml2.so.$VER libxml2.so
-    logcmd ln -s ../../lib/libxml2.so.$VER libxml2.so.2
-    logcmd ln -s ../../lib/libxml2.so.$VER libxml2.so.$VER
-    popd >/dev/null
-    pushd $DESTDIR/usr/lib/amd64 >/dev/null
-    logcmd ln -s ../../../lib/64/libxml2.so.$VER libxml2.so
-    logcmd ln -s ../../../lib/64/libxml2.so.$VER libxml2.so.2
-    logcmd ln -s ../../../lib/64/libxml2.so.$VER libxml2.so.$VER
-    popd>/dev/null
-}
+TESTSUITE_FILTER="^(Total|[Tt]esting|Ran)"
 
 init
 download_source $PROG $PROG $VER
@@ -99,9 +46,9 @@ patch_source
 prep_build
 build
 run_testsuite check
-make_lintlibs xml2 /usr/lib /usr/include/libxml2 "libxml/*.h"
-fix_python_install
 make_isa_stub
-move_libs
-make_package
+make_package local.mog final.mog
 clean_up
+
+# Vim hints
+# vim:ts=4:sw=4:et:fdm=marker

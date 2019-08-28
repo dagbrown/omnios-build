@@ -1,16 +1,11 @@
-From dad178a7fb894660036982a75b4e1c30e71cbd33 Mon Sep 17 00:00:00 2001
-From: oracle <solaris@oracle.com>
-Date: Mon, 3 Aug 2015 14:37:01 -0700
-Subject: [PATCH 13/34] Solaris Auditing support
-
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/INSTALL openssh-7.5p1/INSTALL
---- openssh-7.5p1~/INSTALL	2017-03-20 03:39:27.000000000 +0000
-+++ openssh-7.5p1/INSTALL	2017-10-06 12:34:44.859386383 +0000
-@@ -99,9 +99,13 @@ http://www.gnu.org/software/autoconf/
+diff -wpruN '--exclude=*.orig' a~/INSTALL a/INSTALL
+--- a~/INSTALL	1970-01-01 00:00:00
++++ a/INSTALL	1970-01-01 00:00:00
+@@ -92,9 +92,13 @@ http://www.gnu.org/software/autoconf/
  
  Basic Security Module (BSM):
  
--Native BSM support is know to exist in Solaris from at least 2.5.1,
+-Native BSM support is known to exist in Solaris from at least 2.5.1,
 -FreeBSD 6.1 and OS X.  Alternatively, you may use the OpenBSM
 -implementation (http://www.openbsm.org).
 +Native BSM support is known to exist in Solaris from at least 2.5.1
@@ -21,8 +16,8 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/INSTALL openssh-7.5p1/INSTALL
 +Alternatively, you may use the OpenBSM implementation
 +(http://www.openbsm.org).
  
+ makedepend:
  
- 2. Building / Installation
 @@ -154,8 +158,9 @@ name).
  There are a few other options to the configure script:
  
@@ -35,11 +30,11 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/INSTALL openssh-7.5p1/INSTALL
  
  --with-pam enables PAM support. If PAM support is compiled in, it must
  also be enabled in sshd_config (refer to the UsePAM directive).
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/Makefile.in openssh-7.5p1/Makefile.in
---- openssh-7.5p1~/Makefile.in	2017-10-06 12:34:44.562196133 +0000
-+++ openssh-7.5p1/Makefile.in	2017-10-06 12:34:44.859552781 +0000
-@@ -100,7 +100,7 @@ SSHOBJS= ssh.o readconf.o clientloop.o s
- 	sshconnect.o sshconnect1.o sshconnect2.o mux.o
+diff -wpruN '--exclude=*.orig' a~/Makefile.in a/Makefile.in
+--- a~/Makefile.in	1970-01-01 00:00:00
++++ a/Makefile.in	1970-01-01 00:00:00
+@@ -109,7 +109,7 @@ SSHOBJS= ssh.o readconf.o clientloop.o s
+ 	sshconnect.o sshconnect2.o mux.o
  
  SSHDOBJS=sshd.o auth-rhosts.o auth-passwd.o \
 -	audit.o audit-bsm.o audit-linux.o platform.o \
@@ -47,9 +42,9 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/Makefile.in openssh-7.5p1/Makefile.
  	sshpty.o sshlogin.o servconf.o serverloop.o \
  	auth.o auth2.o auth-options.o session.o \
  	auth2-chall.o groupaccess.o \
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/README.platform openssh-7.5p1/README.platform
---- openssh-7.5p1~/README.platform	2017-03-20 03:39:27.000000000 +0000
-+++ openssh-7.5p1/README.platform	2017-10-06 12:34:44.859653439 +0000
+diff -wpruN '--exclude=*.orig' a~/README.platform a/README.platform
+--- a~/README.platform	1970-01-01 00:00:00
++++ a/README.platform	1970-01-01 00:00:00
 @@ -71,8 +71,8 @@ zlib-devel and pam-devel, on Debian base
  libssl-dev, libz-dev and libpam-dev.
  
@@ -71,9 +66,33 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/README.platform openssh-7.5p1/READM
  
  Platforms using PAM
  -------------------
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/audit-solaris.c openssh-7.5p1/audit-solaris.c
---- openssh-7.5p1~/audit-solaris.c	1970-01-01 01:00:00.000000000 +0000
-+++ openssh-7.5p1/audit-solaris.c	2017-10-06 12:34:44.859848968 +0000
+diff -wpruN '--exclude=*.orig' a~/audit-bsm.c a/audit-bsm.c
+--- a~/audit-bsm.c	1970-01-01 00:00:00
++++ a/audit-bsm.c	1970-01-01 00:00:00
+@@ -347,7 +347,7 @@ bsm_audit_bad_login(const char *what)
+ /* Below is the sshd audit API code */
+ 
+ void
+-audit_connection_from(const char *host, int port)
++audit_connection_from(struct ssh *ssh, const char *host, int port)
+ {
+ 	AuditInfoTermID *tid = &ssh_bsm_tid;
+ 	char buf[1024];
+diff -wpruN '--exclude=*.orig' a~/audit-linux.c a/audit-linux.c
+--- a~/audit-linux.c	1970-01-01 00:00:00
++++ a/audit-linux.c	1970-01-01 00:00:00
+@@ -71,7 +71,7 @@ linux_audit_record_event(int uid, const
+ /* Below is the sshd audit API code */
+ 
+ void
+-audit_connection_from(const char *host, int port)
++audit_connection_from(struct ssh *ssh, const char *host, int port)
+ {
+ 	/* not implemented */
+ }
+diff -wpruN '--exclude=*.orig' a~/audit-solaris.c a/audit-solaris.c
+--- a~/audit-solaris.c	1970-01-01 00:00:00
++++ a/audit-solaris.c	1970-01-01 00:00:00
 @@ -0,0 +1,574 @@
 +/*
 + * CDDL HEADER START
@@ -104,8 +123,8 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/audit-solaris.c openssh-7.5p1/audit
 +#if defined(USE_SOLARIS_AUDIT)
 +
 +#include "audit.h"
-+#include "buffer.h"
-+#include "key.h"
++#include "sshbuf.h"
++#include "sshkey.h"
 +#include "hostfile.h"
 +#include "auth.h"
 +#include "log.h"
@@ -248,9 +267,9 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/audit-solaris.c openssh-7.5p1/audit
 + */
 +/* ARGSUSED */
 +void
-+audit_connection_from(const char *host, int port)
++audit_connection_from(struct ssh *ssh, const char *host, int port)
 +{
-+	int peer = packet_get_connection_in();
++	int peer = ssh_packet_get_connection_in(ssh);
 +	adt_session_data_t	*ah = NULL;
 +
 +	if (adt_load_termid(peer, &tid) != 0) {
@@ -298,7 +317,7 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/audit-solaris.c openssh-7.5p1/audit
 + *	Entry	the_authcntxt
 + */
 +void
-+audit_event(ssh_audit_event_t event)
++audit_event(struct ssh *ssh, ssh_audit_event_t event)
 +{
 +	static boolean_t logged_in = B_FALSE;	/* if user did login */
 +	int fail = PAM_IGNORE;		/* default unset */
@@ -649,10 +668,34 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/audit-solaris.c openssh-7.5p1/audit
 +	(void) adt_end_session(ah);
 +}
 +#endif	/* USE_SOLARIS_AUDIT */
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/configure.ac openssh-7.5p1/configure.ac
---- openssh-7.5p1~/configure.ac	2017-10-06 12:34:44.509877706 +0000
-+++ openssh-7.5p1/configure.ac	2017-10-06 12:34:44.860506010 +0000
-@@ -1575,7 +1575,7 @@ AC_ARG_WITH([libedit],
+diff -wpruN '--exclude=*.orig' a~/audit.c a/audit.c
+--- a~/audit.c	1970-01-01 00:00:00
++++ a/audit.c	1970-01-01 00:00:00
+@@ -120,7 +120,7 @@ audit_event_lookup(ssh_audit_event_t ev)
+  * has been attempted.
+  */
+ void
+-audit_connection_from(const char *host, int port)
++audit_connection_from(struct ssh *, const char *host, int port)
+ {
+ 	debug("audit connection from %s port %d euid %d", host, port,
+ 	    (int)geteuid());
+diff -wpruN '--exclude=*.orig' a~/audit.h a/audit.h
+--- a~/audit.h	1970-01-01 00:00:00
++++ a/audit.h	1970-01-01 00:00:00
+@@ -47,7 +47,7 @@ enum ssh_audit_event_type {
+ };
+ typedef enum ssh_audit_event_type ssh_audit_event_t;
+ 
+-void	audit_connection_from(const char *, int);
++void	audit_connection_from(struct ssh *, const char *, int);
+ void	audit_event(struct ssh *, ssh_audit_event_t);
+ void	audit_session_open(struct logininfo *);
+ void	audit_session_close(struct logininfo *);
+diff -wpruN '--exclude=*.orig' a~/configure.ac a/configure.ac
+--- a~/configure.ac	1970-01-01 00:00:00
++++ a/configure.ac	1970-01-01 00:00:00
+@@ -1600,7 +1600,7 @@ AC_ARG_WITH([libedit],
  
  AUDIT_MODULE=none
  AC_ARG_WITH([audit],
@@ -661,7 +704,7 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/configure.ac openssh-7.5p1/configur
  	[
  	  AC_MSG_CHECKING([for supported audit module])
  	  case "$withval" in
-@@ -1612,6 +1612,13 @@ AC_ARG_WITH([audit],
+@@ -1637,6 +1637,13 @@ AC_ARG_WITH([audit],
  		SSHDLIBS="$SSHDLIBS -laudit"
  		AC_DEFINE([USE_LINUX_AUDIT], [1], [Use Linux audit module])
  		;;
@@ -675,10 +718,10 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/configure.ac openssh-7.5p1/configur
  	  debug)
  		AUDIT_MODULE=debug
  		AC_MSG_RESULT([debug])
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/defines.h openssh-7.5p1/defines.h
---- openssh-7.5p1~/defines.h	2017-03-20 03:39:27.000000000 +0000
-+++ openssh-7.5p1/defines.h	2017-10-06 12:34:44.860655565 +0000
-@@ -645,6 +645,11 @@ struct winsize {
+diff -wpruN '--exclude=*.orig' a~/defines.h a/defines.h
+--- a~/defines.h	1970-01-01 00:00:00
++++ a/defines.h	1970-01-01 00:00:00
+@@ -650,6 +650,11 @@ struct winsize {
  # define CUSTOM_SSH_AUDIT_EVENTS
  #endif
  
@@ -690,26 +733,36 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/defines.h openssh-7.5p1/defines.h
  #if !defined(HAVE___func__) && defined(HAVE___FUNCTION__)
  #  define __func__ __FUNCTION__
  #elif !defined(HAVE___func__)
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/sshd.c openssh-7.5p1/sshd.c
---- openssh-7.5p1~/sshd.c	2017-10-06 12:34:44.510656257 +0000
-+++ openssh-7.5p1/sshd.c	2017-10-06 12:34:44.860941468 +0000
-@@ -2057,7 +2057,9 @@ main(int ac, char **av)
+diff -wpruN '--exclude=*.orig' a~/sshd.c a/sshd.c
+--- a~/sshd.c	1970-01-01 00:00:00
++++ a/sshd.c	1970-01-01 00:00:00
+@@ -2050,7 +2050,7 @@ main(int ac, char **av)
+ 	remote_ip = ssh_remote_ipaddr(ssh);
+ 
+ #ifdef SSH_AUDIT_EVENTS
+-	audit_connection_from(remote_ip, remote_port);
++	audit_connection_from(ssh, remote_ip, remote_port);
+ #endif
+ 
+ 	rdomain = ssh_packet_rdomain_in(ssh);
+@@ -2138,8 +2138,10 @@ main(int ac, char **av)
  	}
  
  #ifdef SSH_AUDIT_EVENTS
-+#ifndef	USE_SOLARIS_AUDIT
- 	audit_event(SSH_AUTH_SUCCESS);
-+#endif	/* !USE_SOLARIS_AUDIT */
++#ifndef USE_SOLARIS_AUDIT
+ 	audit_event(ssh, SSH_AUTH_SUCCESS);
  #endif
++#endif
  
  #ifdef GSSAPI
-@@ -2087,6 +2089,10 @@ main(int ac, char **av)
- 		do_pam_session();
+ 	if (options.gss_authentication) {
+@@ -2168,6 +2170,10 @@ main(int ac, char **av)
+ 		do_pam_session(ssh);
  	}
  #endif
 +#ifdef	USE_SOLARIS_AUDIT
 +	/* Audit should take place after all successful pam */
-+	audit_event(SSH_AUTH_SUCCESS);
++	audit_event(ssh, SSH_AUTH_SUCCESS);
 +#endif	/* USE_SOLARIS_AUDIT */
  
  	/*

@@ -1,12 +1,7 @@
-From bc29dcd14f8623098d2383bd36e486145948a653 Mon Sep 17 00:00:00 2001
-From: oracle <solaris@oracle.com>
-Date: Mon, 3 Aug 2015 14:38:19 -0700
-Subject: [PATCH 15/34] Enable login to a role if PAM is ok with it
-
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth-pam.c openssh-7.5p1/auth-pam.c
---- openssh-7.5p1~/auth-pam.c	2017-10-06 12:34:44.705025561 +0000
-+++ openssh-7.5p1/auth-pam.c	2017-10-06 12:34:44.987230847 +0000
-@@ -1071,6 +1071,20 @@ do_pam_account(void)
+diff -wpruN '--exclude=*.orig' a~/auth-pam.c a/auth-pam.c
+--- a~/auth-pam.c	1970-01-01 00:00:00
++++ a/auth-pam.c	1970-01-01 00:00:00
+@@ -1174,6 +1174,20 @@ do_pam_account(void)
  	return (sshpam_account_status);
  }
  
@@ -27,24 +22,23 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth-pam.c openssh-7.5p1/auth-pam.c
  void
  do_pam_setcred(int init)
  {
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth-pam.h openssh-7.5p1/auth-pam.h
---- openssh-7.5p1~/auth-pam.h	2017-03-20 03:39:27.000000000 +0000
-+++ openssh-7.5p1/auth-pam.h	2017-10-06 12:34:44.987515678 +0000
-@@ -29,6 +29,10 @@ void start_pam(Authctxt *);
- void finish_pam(void);
- u_int do_pam_account(void);
- void do_pam_session(void);
+diff -wpruN '--exclude=*.orig' a~/auth-pam.h a/auth-pam.h
+--- a~/auth-pam.h	1970-01-01 00:00:00
++++ a/auth-pam.h	1970-01-01 00:00:00
+@@ -44,4 +44,9 @@ int sshpam_get_maxtries_reached(void);
+ void sshpam_set_maxtries_reached(int);
+ int is_pam_session_open(void);
+ 
 +#ifdef HAVE_PAM_AUSER
 +void do_pam_set_auser(const char *);
 +#endif
 +void do_pam_set_tty(const char *);
- void do_pam_setcred(int );
- void do_pam_chauthtok(void);
- int do_pam_putenv(char *, char *);
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth.h openssh-7.5p1/auth.h
---- openssh-7.5p1~/auth.h	2017-10-06 12:34:44.705125374 +0000
-+++ openssh-7.5p1/auth.h	2017-10-06 12:34:44.987596386 +0000
-@@ -84,6 +84,9 @@ struct Authctxt {
++
+ #endif /* USE_PAM */
+diff -wpruN '--exclude=*.orig' a~/auth.h a/auth.h
+--- a~/auth.h	1970-01-01 00:00:00
++++ a/auth.h	1970-01-01 00:00:00
+@@ -98,6 +98,9 @@ struct Authctxt {
  #ifdef PAM_ENHANCEMENT
  	char		*authmethod_name;
  #endif
@@ -52,23 +46,23 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth.h openssh-7.5p1/auth.h
 +	char		*auser;
 +#endif
  };
+ 
  /*
-  * Every authentication method has to handle authentication requests for
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth2-hostbased.c openssh-7.5p1/auth2-hostbased.c
---- openssh-7.5p1~/auth2-hostbased.c	2017-03-20 03:39:27.000000000 +0000
-+++ openssh-7.5p1/auth2-hostbased.c	2017-10-06 12:34:44.987705791 +0000
-@@ -85,6 +85,9 @@ userauth_hostbased(Authctxt *authctxt)
- 	buffer_dump(&b);
- 	buffer_free(&b);
+diff -wpruN '--exclude=*.orig' a~/auth2-hostbased.c a/auth2-hostbased.c
+--- a~/auth2-hostbased.c	1970-01-01 00:00:00
++++ a/auth2-hostbased.c	1970-01-01 00:00:00
+@@ -81,6 +81,9 @@ userauth_hostbased(struct ssh *ssh)
+ 	debug("signature:");
+ 	sshbuf_dump_data(sig, slen, stderr);
  #endif
 +#ifdef HAVE_PAM_AUSER
 +	authctxt->auser = NULL;
 +#endif
- 	pktype = key_type_from_name(pkalg);
+ 	pktype = sshkey_type_from_name(pkalg);
  	if (pktype == KEY_UNSPEC) {
  		/* this is perfectly legal */
-@@ -142,6 +145,13 @@ userauth_hostbased(Authctxt *authctxt)
- 			buffer_len(&b))) == 1)
+@@ -153,6 +156,13 @@ userauth_hostbased(struct ssh *ssh)
+ 	    sshbuf_ptr(b), sshbuf_len(b), pkalg, ssh->compat)) == 0)
  		authenticated = 1;
  
 +#ifdef HAVE_PAM_AUSER
@@ -78,13 +72,13 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth2-hostbased.c openssh-7.5p1/aut
 +	}
 +#endif
 +
- 	buffer_free(&b);
+ 	auth2_record_key(authctxt, authenticated, key);
+ 	sshbuf_free(b);
  done:
- 	debug2("userauth_hostbased: authenticated %d", authenticated);
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth2.c openssh-7.5p1/auth2.c
---- openssh-7.5p1~/auth2.c	2017-10-06 12:34:44.914808161 +0000
-+++ openssh-7.5p1/auth2.c	2017-10-06 12:34:44.987833997 +0000
-@@ -344,6 +344,14 @@ userauth_finish(Authctxt *authctxt, int
+diff -wpruN '--exclude=*.orig' a~/auth2.c a/auth2.c
+--- a~/auth2.c	1970-01-01 00:00:00
++++ a/auth2.c	1970-01-01 00:00:00
+@@ -397,6 +397,14 @@ userauth_finish(struct ssh *ssh, int aut
  #endif
  	}
  
@@ -99,10 +93,10 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/auth2.c openssh-7.5p1/auth2.c
  	if (authenticated && options.num_auth_methods != 0) {
  
  #if defined(USE_PAM) && defined(PAM_ENHANCEMENT)
-diff -pruN '--exclude=*.orig' openssh-7.5p1~/monitor.c openssh-7.5p1/monitor.c
---- openssh-7.5p1~/monitor.c	2017-10-06 12:34:44.917851167 +0000
-+++ openssh-7.5p1/monitor.c	2017-10-06 12:34:44.988175924 +0000
-@@ -405,6 +405,12 @@ monitor_child_preauth(Authctxt *_authctx
+diff -wpruN '--exclude=*.orig' a~/monitor.c a/monitor.c
+--- a~/monitor.c	1970-01-01 00:00:00
++++ a/monitor.c	1970-01-01 00:00:00
+@@ -392,6 +392,12 @@ monitor_child_preauth(struct ssh *ssh, s
  		}
  	}
  
@@ -115,7 +109,7 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/monitor.c openssh-7.5p1/monitor.c
  	if (!authctxt->valid)
  		fatal("%s: authenticated invalid user", __func__);
  	if (strcmp(auth_method, "unknown") == 0)
-@@ -605,12 +611,14 @@ monitor_reset_key_state(void)
+@@ -598,14 +604,16 @@ monitor_reset_key_state(void)
  {
  	/* reset state */
  	free(key_blob);
@@ -124,14 +118,16 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/monitor.c openssh-7.5p1/monitor.c
 +	hostbased_cuser = NULL;
 +#endif
  	free(hostbased_chost);
+ 	sshauthopt_free(key_opts);
  	key_blob = NULL;
  	key_bloblen = 0;
  	key_blobtype = MM_NOKEY;
+ 	key_opts = NULL;
 -	hostbased_cuser = NULL;
  	hostbased_chost = NULL;
  }
  
-@@ -1071,6 +1079,11 @@ mm_answer_pam_account(int sock, Buffer *
+@@ -1077,6 +1085,11 @@ mm_answer_pam_account(struct ssh *ssh, i
  	if (!options.use_pam)
  		fatal("%s: PAM not enabled", __func__);
  
@@ -142,4 +138,4 @@ diff -pruN '--exclude=*.orig' openssh-7.5p1~/monitor.c openssh-7.5p1/monitor.c
 +
  	ret = do_pam_account();
  
- 	buffer_put_int(m, ret);
+ 	if ((r = sshbuf_put_u32(m, ret)) != 0 ||

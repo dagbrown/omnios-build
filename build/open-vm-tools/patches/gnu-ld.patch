@@ -1,0 +1,22 @@
+
+Despite providing a --with(out)-gnu-ld option to configure, the configure
+script always enables a GNU ld specific flag.
+
+This has been submitted upstream at:
+    https://github.com/vmware/open-vm-tools/pull/268
+
+diff -wpruN '--exclude=*.orig' a~/configure.ac a/configure.ac
+--- a~/configure.ac	1970-01-01 00:00:00
++++ a/configure.ac	1970-01-01 00:00:00
+@@ -1523,7 +1523,11 @@ VMTOOLS_LIBS="$BUILDDIR/libvmtools/libvm
+ VMTOOLS_CPPFLAGS="-DVMTOOLS_USE_GLIB $GLIB2_CPPFLAGS"
+ 
+ PLUGIN_CPPFLAGS="$VMTOOLS_CPPFLAGS $PLUGIN_CPPFLAGS"
++if test "$have_gnu_ld" = "yes"; then
+ PLUGIN_LDFLAGS="-Wl,-z,defs -Wl,-lc -Wl,--as-needed -shared -module -avoid-version"
++else
++PLUGIN_LDFLAGS="-Wl,-z,defs -Wl,-lc -shared -module -avoid-version"
++fi
+ 
+ # Installation directories for core services plugins.
+ TEST_PLUGIN_INSTALLDIR=$datadir/open-vm-tools/tests

@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,38 +18,44 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
-# Use is subject to license terms.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 #
-# Load support functions
 . ../../lib/functions.sh
 
-PROG=coreutils          # App name
-VER=8.28                # App version
-PKG=file/gnu-coreutils  # Package name (without prefix)
+PROG=coreutils
+VER=8.31
+PKG=file/gnu-coreutils
 SUMMARY="coreutils - GNU core utilities"
-DESC="GNU core utilities ($VER)"
+DESC="GNU core utilities"
 
 BUILD_DEPENDS_IPS="compress/xz library/gmp"
 
-CPPFLAGS="-I/usr/include/gmp"
 PREFIX=/usr/gnu
-reset_configure_opts
-CONFIGURE_OPTS+=" --with-openssl=auto"
-CONFIGURE_OPTS_32+=" --libexecdir=/usr/lib --bindir=/usr/gnu/bin"
-CONFIGURE_OPTS_64+=" --libexecdir=/usr/lib/$ISAPART64"
 
-# coreutils incorrectly detects inotify support
-export ac_cv_func_inotify_init=no
-# OS as reported by `uname -o`
-export gl_cv_host_operating_system=illumos
+# We ship 64-bit binaries under /usr/gnu/bin/ with selected ones linked back
+# to /usr/bin/, but we need to continue building dual arch so that the
+# 32-bit libstdbuf.so is available. This enables the stdbuf command to
+# work with 32-bit binaries.
+set_arch both
+
+CPPFLAGS="-I/usr/include/gmp"
+CONFIGURE_OPTS+="
+    --with-openssl=auto
+    gl_cv_host_operating_system=illumos
+    ac_cv_func_inotify_init=no
+"
+CONFIGURE_OPTS_32+="
+    --bindir=/usr/gnu/bin/__i386
+    --libexecdir=/usr/lib
+"
+CONFIGURE_OPTS_64+="
+    --libexecdir=/usr/lib/$ISAPART64
+"
 
 TESTSUITE_FILTER='^[A-Z#][A-Z ]'
-[ -n "$BATCH" ] && SKIP_TESTSUITE=1
 
 init
 download_source $PROG $PROG $VER
@@ -61,4 +67,4 @@ make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

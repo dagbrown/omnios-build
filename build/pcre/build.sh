@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,30 +18,22 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
+
 #
 # Copyright 2011-2015 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 PROG=pcre
-VER=8.41
-VERHUMAN=$VER
+VER=8.43
 PKG=library/pcre
 SUMMARY="Perl-Compatible Regular Expressions"
-DESC="PCRE - Perl-Compatible Regular Expressions"
+DESC="The PCRE library is a set of functions that implement regular expression"
+DESC+=" pattern matching using the same syntax and semantics as Perl 5"
 
-DEPENDS_IPS="library/readline compress/bzip2 library/zlib system/library/g++-5-runtime
-	system/library/gcc-5-runtime system/library system/library/math"
-
-LIBTOOL_NOSTDLIB=libtool
-LIBTOOL_NOSTDLIB_EXTRAS=-lc
-
-CONFIGURE_OPTS="$CONFIGURE_OPTS
-	--includedir=/usr/include/pcre
+CONFIGURE_OPTS="
 	--localstatedir=/var
 	--disable-static
 	--enable-cpp
@@ -58,13 +50,6 @@ CONFIGURE_OPTS="$CONFIGURE_OPTS
 	--with-pic
 "
 
-make_install64() {
-    # the 32bit version installed these and the 64bit version will fail
-    # reinstalling them... clear them out and let 64bit do its business.
-    rm -rf $DESTDIR/usr/share/man
-    make_install
-}
-
 init
 download_source $PROG $PROG $VER
 patch_source
@@ -76,4 +61,4 @@ make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

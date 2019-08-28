@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,32 +18,41 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
-PROG=curl       # App name
-VER=7.56.1      # App version
-PKG=web/curl    # Package name (without prefix)
-SUMMARY="$PROG - command line tool for transferring data with URL syntax"
-DESC="$SUMMARY"
+PROG=curl
+VER=7.65.3
+PKG=web/curl
+SUMMARY="Command line tool for transferring data with URL syntax"
+DESC="Curl is a command line tool for transferring data with URL syntax, "
+DESC+="supporting many Internet protocols"
 
-DEPENDS_IPS="web/ca-bundle library/libidn"
+RUN_DEPENDS_IPS="web/ca-bundle library/libidn"
 
-CONFIGURE_OPTS="--enable-thread --with-ca-bundle=/etc/ssl/cacert.pem"
-# curl actually has arch-dependent headers. Boo.
-CONFIGURE_OPTS_64="$CONFIGURE_OPTS_64 --includedir=$PREFIX/include/amd64"
+CONFIGURE_OPTS="
+    --enable-thread
+    --with-ca-bundle=/etc/ssl/cacert.pem
+"
+# curl has arch-dependent headers.
+CONFIGURE_OPTS_64+=" --includedir=$PREFIX/include/amd64"
 
-LIBTOOL_NOSTDLIB=libtool
+# Build backwards so that the 32-bit version is available for the test-suite.
+# Otherwise there are test failures because some tests preload a library
+# to override the hostname. If the library is 64-bit then the test aborts
+# when runtests.pl calls a 32-bit shell to spawn a sub-process.
+BUILDORDER="64 32"
+
+# As of curl 7.61.1, Makefiles include macros over 8192 bytes long which our
+# default make does not like. Ensure that GNU make is used for all invocations.
+export MAKE
+
+SKIP_LICENCES=curl
 TESTSUITE_FILTER="^TEST[A-Z]"
-
-# Skip tests when in batch mode as they take a long time
-[ -n "$BATCH" ] && SKIP_TESTSUITE=1
 
 init
 download_source $PROG $PROG $VER
@@ -54,3 +63,6 @@ run_testsuite
 make_isa_stub
 make_package
 clean_up
+
+# Vim hints
+# vim:ts=4:sw=4:et:fdm=marker

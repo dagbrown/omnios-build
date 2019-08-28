@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,39 +18,39 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2017 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Use is subject to license terms.
-#
-# Load support functions
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
+
 . ../../lib/functions.sh
 
 PROG=sqlite-autoconf
-VER=3210000
-VERHUMAN=3.21.0
+VER=3290000
 PKG=database/sqlite-3
 SUMMARY="SQL database engine library"
-DESC="$SUMMARY"
+DESC="SQLite is a self-contained, high-reliability, embedded, full-featured, "
+DESC+="public-domain, SQL database engine."
 
-CONFIGURE_OPTS_64+=" --includedir=/usr/include"
-LIBTOOL_NOSTDLIB=libtool
-LIBTOOL_NOSTDLIB_EXTRAS=-lc
+SKIP_LICENCES="Public Domain"
 
-make_stub_dirs() {
-    logcmd mkdir -p $DESTDIR/usr/bin
-    logcmd mkdir -p $DESTDIR/usr/lib
-    logcmd mkdir -p $DESTDIR/usr/include
-    logcmd mkdir -p $DESTDIR/usr/lib/amd64
-    logcmd mkdir -p $DESTDIR/usr/share/man/man1
-}
+VERHUMAN="`echo $VER | sed '
+    # Mmmsspp -> M.mm.ss.pp
+    s/\(.\)\(..\)\(..\)\(..\)/\1.\2.\3.\4/
+    # Remove leading zeros
+    s/\.0/./g
+    # Remove empty last component
+    s/\.0$//
+'`"
+[ -n "$VERHUMAN" ] || logerr "-- Could not build VERHUMAN"
+logmsg "-- Building version $VERHUMAN"
+
+CFLAGS+=" -DSQLITE_ENABLE_COLUMN_METADATA"
 
 init
 download_source sqlite $PROG $VER
 patch_source
 prep_build
-make_stub_dirs
 build
 make_isa_stub
 VER=$VERHUMAN
@@ -58,4 +58,4 @@ make_package
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

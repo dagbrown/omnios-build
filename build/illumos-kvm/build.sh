@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 #
-# CDDL HEADER START
+# {{{ CDDL HEADER START
 #
 # The contents of this file are subject to the terms of the
 # Common Development and Distribution License, Version 1.0 only
@@ -18,14 +18,12 @@
 # fields enclosed by brackets "[]" replaced with your own identifying
 # information: Portions Copyright [yyyy] [name of copyright owner]
 #
-# CDDL HEADER END
-#
+# CDDL HEADER END }}}
 #
 # Copyright 2011-2012 OmniTI Computer Consulting, Inc.  All rights reserved.
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2019 OmniOS Community Edition (OmniOSce) Association.
 # Use is subject to license terms.
 #
-# Load support functions
 . ../../lib/functions.sh
 
 # This is pretty meaningless, and should be "0.5.11" but we messed that up
@@ -34,13 +32,9 @@
 VER=1.0.5.11
 KERNEL_SOURCE=$PREBUILT_ILLUMOS
 PROTO_AREA=$KERNEL_SOURCE/proto/root_i386
+PROG=illumos-kvm
 SUMMARY="placeholder; reset below"
 DESC="$SUMMARY"
-
-# Unless building with HEAD from joyent/illumos-kvm[-cmd], specify the
-# revision to use.
-KVM_ROLLBACK=
-KVM_CMD_ROLLBACK=
 
 # These are the dependencies for both the module and the cmds
 BUILD_DEPENDS_IPS="
@@ -49,32 +43,41 @@ BUILD_DEPENDS_IPS="
     developer/versioning/git
     file/gnu-coreutils
 "
+SKIP_LICENCES='qemu.license'
 
-# Only 64-bit matters
-BUILDARCH=64
+set_gccver 4.4.4
+set_arch 64
 
 # Unset the prefix because we actually DO want things in kernel etc
-PREFIX="" 
+PREFIX=
 
-download_source() {
-    logmsg "Obtaining source files"
-    if [ -d $TMPDIR/$BUILDDIR ]; then
-        logmsg "--- Removing existing directory for a fresh start"
-        logcmd rm -rf $TMPDIR/$BUILDDIR
-    fi
-    logcmd /bin/git clone $SRC_REPO $TMPDIR/$BUILDDIR || \
-        logerr "--- Failed to clone from $SRC_REPO"
-    if [ -n "$COMMIT" ]; then
-        logmsg "--- Setting revision to $COMMIT"
-        logcmd git -C $TMPDIR/$BUILDDIR checkout $COMMIT
-    else
-        COMMIT=$(git -C $TMPDIR/$BUILDDIR log -1 --format=format:%H)
-    fi
+# Respect environmental overrides for these to ease development.
+: ${KVM_SOURCE_REPO:=$GITHUB/illumos-kvm}
+: ${KVM_SOURCE_BRANCH:=r$RELVER}
+: ${KVM_CMD_SOURCE_REPO:=$GITHUB/illumos-kvm-cmd}
+: ${KVM_CMD_SOURCE_BRANCH:=r$RELVER}
+
+clone_source() {
+    clone_github_source illumos-kvm \
+        "$KVM_SOURCE_REPO" "$KVM_SOURCE_BRANCH" "$KVM_CLONE"
+    KVM_COMMIT="`git -C $TMPDIR/$BUILDDIR/illumos-kvm \
+        log -1 --format=format:%H`"
+    clone_github_source illumos-kvm-cmd \
+        "$KVM_CMD_SOURCE_REPO" "$KVM_CMD_SOURCE_BRANCH" "$KVM_CMD_CLONE"
+    KVM_CMD_COMMIT="`git -C $TMPDIR/$BUILDDIR/illumos-kvm-cmd \
+        log -1 --format=format:%H`"
 }
 
-configure64() {
-    true
-}
+# Check this once at the start
+check_for_prebuilt
+# Fetch the source
+init
+clone_source
+
+###########################################################################
+# Kernel module build
+
+configure64() { :; }
 
 make_prog() {
     logmsg "--- make"
@@ -82,10 +85,19 @@ make_prog() {
         KERNEL_SOURCE=$KERNEL_SOURCE \
         PROTO_AREA=$PROTO_AREA \
         CC=/opt/gcc-4.4.4/bin/gcc \
+        PRIMARY_COMPILER_VER=4 \
         || logerr "--- Make failed"
     logcmd cp $KERNEL_SOURCE/usr/src/OPENSOLARIS.LICENSE \
         $SRCDIR/OPENSOLARIS.LICENSE \
         || logerr "--- failed to copy CDDL from kernel sources"
+}
+
+save_function clean_up _clean_up
+clean_up() {
+    _clean_up
+    [ -f $SRCDIR/OPENSOLARIS.LICENSE ] \
+        && logcmd rm -f $SRCDIR/OPENSOLARIS.LICENSE
+    return 0
 }
 
 fix_drivers() {
@@ -93,57 +105,31 @@ fix_drivers() {
         logerr "--- couldn't move kernel bits into /"
 }
 
-# Check this once at the start
-check_for_prebuilt
-
-###########################################################################
-# First we build the kernel module
-
 PROG=illumos-kvm
-# Default to building tip, but site.sh can force a specific commit checkout.
-COMMIT=$KVM_ROLLBACK
-SRC_REPO=https://github.com/joyent/illumos-kvm.git
-PATCHDIR=patches.$PROG
 PKG=driver/virtualization/kvm
+set_builddir "$BUILDDIR/$PROG"
+echo "TMPDIR: $TMPDIR"
+echo "BUILDDIR: $BUILDDIR"
 
-init
-download_source
-patch_source
 prep_build
 build
 fix_drivers
-SUMMARY="Illumos KVM kernel driver ($PROG ${COMMIT:0:10})"
-DESC="KVM is the kernel virtual machine, a framework for the in-kernel acceleration of QEMU."
+SUMMARY="illumos KVM kernel driver ($PROG ${KVM_COMMIT:0:10})"
+DESC="KVM is the kernel virtual machine, a framework for the in-kernel "
+DESC+="acceleration of QEMU."
 make_package kvm.mog
 clean_up
 
 ###########################################################################
-# Next, the utilities (they follow the kernel module version)
+# KVM utilities
 
-PROG=illumos-kvm-cmd
-# Default to building tip, but site.sh can force a specific commit checkout.
-COMMIT=$KVM_CMD_ROLLBACK
-SRC_REPO=https://github.com/joyent/illumos-kvm-cmd.git
-KVM_DIR=$TMPDIR/illumos-kvm-$VER
-PATCHDIR=patches.$PROG
-PKG=system/kvm
-
-# Reset a couple of important things
-BUILDDIR=$PROG-$VER  # This must be explicitly reset from the run above
-PREFIX=/usr
-
-# Only 64-bit matters
-BUILDARCH=64
-
-# Borrowed from Joyent's build.sh within the source
-# so we can find ctfconvert during 'make install'
-CTFBINDIR="$KERNEL_SOURCE/usr/src/tools/proto/root_i386-nd/opt/onbld/bin/i386"
-export CTFBINDIR
-export PATH="$PATH:$CTFBINDIR"
+configure64() {
+    PREFIX=/usr
+    CC=$GCC
+    export KERNEL_SOURCE KVM_DIR PREFIX CC
+}
 
 make_prog() {
-    CC=/opt/gcc-4.4.4/bin/gcc
-    export KERNEL_SOURCE KVM_DIR PREFIX CC
     logmsg "--- build.sh"
     logcmd ./build.sh || logerr "--- build.sh failed"
 }
@@ -154,14 +140,16 @@ make_install() {
         logerr "--- Make install failed"
 }
 
-download_source
-patch_source
+PROG=illumos-kvm-cmd
+PKG=system/kvm
+KVM_DIR="$TMPDIR/$BUILDDIR"
+set_builddir "$BUILDDIR-cmd"
+
 prep_build
 build
-SUMMARY="Illumos KVM utilities ($PROG ${COMMIT:0:10})"
-DESC="KVM is the kernel virtual machine, a framework for the in-kernel acceleration of QEMU."
+SUMMARY="illumos KVM utilities ($PROG ${KVM_CMD_COMMIT:0:10})"
 make_package kvm-cmd.mog
 clean_up
 
 # Vim hints
-# vim:ts=4:sw=4:et:
+# vim:ts=4:sw=4:et:fdm=marker

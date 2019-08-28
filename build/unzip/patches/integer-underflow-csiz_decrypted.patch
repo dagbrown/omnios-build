@@ -1,0 +1,27 @@
+From bd150334fb4084f5555a6be26b015a0671cb5b74 Mon Sep 17 00:00:00 2001
+From: Kamil Dudka <kdudka@redhat.com>
+Date: Tue, 22 Sep 2015 18:52:23 +0200
+Subject: [PATCH] extract: prevent unsigned overflow on invalid input
+
+diff -pruN '--exclude=*.orig' unzip60~/extract.c unzip60/extract.c
+--- unzip60~/extract.c	2018-03-29 23:42:34.432149169 +0000
++++ unzip60/extract.c	2018-03-29 23:42:34.512723531 +0000
+@@ -1257,8 +1257,17 @@ static int extract_or_test_entrylist(__G
+         if (G.lrec.compression_method == STORED) {
+             zusz_t csiz_decrypted = G.lrec.csize;
+ 
+-            if (G.pInfo->encrypted)
++            if (G.pInfo->encrypted) {
++                if (csiz_decrypted <= 12) {
++                    /* handle the error now to prevent unsigned overflow */
++                    Info(slide, 0x401, ((char *)slide,
++                      LoadFarStringSmall(ErrUnzipNoFile),
++                      LoadFarString(InvalidComprData),
++                      LoadFarStringSmall2(Inflate)));
++                    return PK_ERR;
++                }
+                 csiz_decrypted -= 12;
++            }
+             if (G.lrec.ucsize != csiz_decrypted) {
+                 Info(slide, 0x401, ((char *)slide,
+                   LoadFarStringSmall2(WrnStorUCSizCSizDiff),

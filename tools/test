@@ -9,7 +9,7 @@
 # source.  A copy of the CDDL is also available via the Internet at
 # http://www.illumos.org/license/CDDL.
 
-# Copyright 2017 OmniOS Community Edition (OmniOSce) Association.
+# Copyright 2018 OmniOS Community Edition (OmniOSce) Association.
 
 __SCRIPTDIR="${0%/*}"
 
@@ -26,6 +26,7 @@ problem()
 }
 
 typeset -A targets
+typeset -A dashrev
 
 add_target()
 {
@@ -40,11 +41,14 @@ add_target()
 				s/ .*//
 				q
 			}'`"
+		drev="`grep ^DASHREV= $build | sed '
+			1 {
+				s/DASHREV=//
+				s/ .*//
+				q
+			}'`"
 		case $pkg:$ver in
-			# For GCC main package, extract the ver from common.sh
-			*/gcc?:\$GCCVER)
-				ver="`grep '^GCCVER=' $dir/common.sh \
-				    | cut -d= -f2`"
+			*/gcc?:*)
 				ver=${ver/%.0/}
 				;;
 			runtime/perl:\$DEPVER)
@@ -55,10 +59,10 @@ add_target()
 					}
 				    '`"
 				;;
-			*java/jdk:*)
+			*/openjdk8:*)
 				update=`grep '^UPDATE=' $build | cut -d= -f2`
-				build=`grep '^BUILD=' $build | cut -d= -f2`
-				ver="${ver}_$update-b$build"
+				date=`grep '^DATE=' $build | cut -d= -f2`
+				ver="$ver.$update-$date"
 				;;
 			system/library/mozilla-nss:*)
 				targets["library/nss"]=$ver
@@ -76,6 +80,7 @@ add_target()
 			library/*idnkit:*)	ver=${ver//-src/} ;;
 			*idnconv*)		ver=${ver//-src/} ;;
 			library/ncurses:*)	ver=${ver//-/.} ;;
+			library/libedit:*)	ver=${ver#*-} ;;
 			network/openssh:*)
 				targets[$pkg]=$ver
 				pkg=service/network/ssh
@@ -84,6 +89,8 @@ add_target()
 				_ver="`grep '^LIBEVENT_VER=' $build \
 				    | cut -d= -f2`"
 				targets["library/libevent"]=$_ver
+				# Remove any trailing 'a'
+				ver=${ver/a/}
 				;;
 			# Skip GCC runtime packages.
 			*gcc-?-runtime:*)	return ;;
@@ -93,7 +100,6 @@ add_target()
 			*perl/manual:*)		return ;;
 			*illumos-closed:*)	return ;;
 			*kvm:*)			return ;;
-			*/sccs:*)		return ;;
 			*illumos-gate*)		return ;;
 			*/omnios-userland:*)	return ;;
 			*/iconv/*)		return ;;
@@ -102,6 +108,7 @@ add_target()
 			*gcc44*)		return ;;
 			*pci.ids:*)		return ;;
 		esac
+		[ -n "$drev" ] && dashrev[$pkg]=$drev
 		targets[$pkg]=$ver
 	elif [[ $build = *.p5m ]]; then
 		egrep -q 'pkg.obsolete.*true' $build && return
@@ -176,8 +183,9 @@ check_packages_md()
 	' | while read pkg ver; do
 		# Skip some packages, tweak others
 		case $pkg in
-			shell/bash-patchlvl)	continue ;;
+			*/*-patchlvl)		continue ;;
 			shell/bash)		continue ;;
+			*/libedit)		ver=${ver#*-} ;;
 		esac
 
 		if [ -n "${targets[$pkg]}" ]; then
@@ -191,55 +199,14 @@ check_packages_md()
 	done
 }
 
-check_baseline()
-{
-	echo "Checking doc/baseline..."
-	nawk < doc/baseline '
-		# Skip obsolete/renamed
-		NF == 3 {
-			sub(/-.*/, "", $NF)
-			print $2, $3
-		}
-	' | while read pkg ver; do
-		case $pkg in
-			system/zones/brand/*)		continue ;;
-			package/pkg)			continue ;;
-			system/library/mtsk)		continue ;;
-			library/security/openssl)	continue ;;
-			runtime/java)			continue ;;
-			shell/bash)			continue ;;
-		esac
-		if [ -n "${targets[$pkg]}" ]; then
-			pver="${targets[$pkg]}"
-			[ "$pver" = "$ver" ] && continue
-			# 16.02 -> 16.2 (e.g. p7zip)
-			[ "${pver//.0/.}" = "$ver" ] && continue
-			# x.0 -> x (e.g. gcc)
-			[ "$pver" = "${ver/.0/}" ] && continue
-			# b/p -> . (e.g. sudo)
-			[ "${pver/[-bp]/.}" = "$ver" ] && continue
-
-			# sqlite3 baseline=3.20.1, build=3200100
-			[ "${pver//0/}" = "${ver//[0\.]/}" ] && continue
-
-			# openjdk
-			jver="${pver/_/.}"
-			[ "${jver/-b0/.}" = "$ver" ] && continue
-			problem "$pkg - baseline=$ver, build=${targets[$pkg]}"
-		fi
-	done
-}
-
 check_constraints()
 {
 	comp="$1"
-	while read pkg ver; do
+	while read pkg ver dash; do
 		# Skip some packages, tweak others
 		[ -n "${targets[$pkg]}" ] && bver=${targets[$pkg]} || bver=
 		case $pkg in
 			*/kvm)				continue ;;
-			*/sccs)				continue ;;
-			*/sunstudio12.1)		continue ;;
 			release/*)			continue ;;
 			*gcc-?-runtime)			continue ;;
 			*g++-?-runtime)			continue ;;
@@ -260,13 +227,21 @@ check_constraints()
 				bver=${targets["runtime/perl"]}
 				;;
 			library/security/openssl)
-				bver=${targets["library/security/openssl-1.0"]}
+				bver=${targets["library/security/openssl-1.1"]}
 				bver=${bver/%[a-z]/}
 				;;
 		esac
 		obver="$bver"
 
 		if [ -n "$bver" ]; then
+			# Dash revision check
+			if [ "$comp" = "omnios-userland" -a \
+			     -n "${dashrev[$pkg]}" -a \
+			     "${dashrev[$pkg]}" != "$dash" ]; then
+				problem "$pkg - $comp= DASH $dash"\
+				    "(build=${dashrev[$pkg]})"
+			fi
+
 			[ "$bver" = "$ver" ] && continue
 			# Try with s/00/0
 			[ "${bver//00/0}" = "$ver" ] && continue
@@ -291,17 +266,14 @@ check_userland()
 	nawk < build/jeos/omnios-userland.pkg '
 		/^#/ { next }
 		/\// {
-			print $1, $2
+			print $1, $2, $3
 		}' | check_constraints omnios-userland
 }
 
 check_entire()
 {
 	echo "Checking entire..."
-	grep '^depend ' build/entire/entire.p5m | sed '
-		s/.*fmri=//
-		s/@/ /
-		s/,5\.11.*//
+	nawk '{print $1,$2}' < build/entire/entire.pkg | sed '
 		/^locale/d
 		/^driver/d
 		/ca-bundle/d
@@ -311,11 +283,10 @@ check_entire()
 }
 
 add_targets
-#print_targets
+[ "$1" = "-p" ] && print_targets && exit 0
 check_packages_md
 check_userland
 check_entire
-check_baseline
 
 exit $err
 

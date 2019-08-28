@@ -1,3 +1,5 @@
-threadlib.patch
-zignore.patch
-types.patch
+gobject.h.patch
+mntent.patch
+no_inotify.patch
+no_export_dynamic.patch
+libsocket.patch
